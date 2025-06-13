@@ -9,4 +9,5 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, u *models.User) error
 	GetAllUser(ctx context.Context) ([]*models.User, error)
 	GetUserByID(ctx context.Context, id int) (*models.User, error)
+	UpdateUser(ctx context.Context, u *models.User) error
 }

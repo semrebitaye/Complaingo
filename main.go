@@ -27,6 +27,7 @@ func main() {
 	r.HandleFunc("/register", handler.Register).Methods("POST")
 	r.HandleFunc("/users", handler.GetAllUser).Methods("GET")
 	r.HandleFunc("/user/{id}", handler.GetUserByID).Methods("GET")
+	r.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH")
 
 	port := os.Getenv("PORT")
 	if port == "" {

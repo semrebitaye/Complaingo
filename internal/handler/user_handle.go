@@ -62,3 +62,21 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
+
+func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	u := &models.User{}
+	json.NewDecoder(r.Body).Decode(u)
+
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "id not found", http.StatusBadRequest)
+		return
+	}
+
+	u.ID = id
+	h.usecase.UpdateUser(r.Context(), u)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(u)
+}

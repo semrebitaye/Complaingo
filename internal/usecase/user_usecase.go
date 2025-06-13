@@ -33,3 +33,7 @@ func (uc *UserUsecase) GetAllUser(ctx context.Context) ([]*models.User, error) {
 func (uc *UserUsecase) GetUserByID(ctx context.Context, id int) (*models.User, error) {
 	return uc.repo.GetUserByID(ctx, id)
 }
+
+func (uc *UserUsecase) UpdateUser(ctx context.Context, u *models.User) error {
+	return uc.repo.UpdateUser(ctx, u)
+}
