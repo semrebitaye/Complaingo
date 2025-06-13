@@ -41,3 +41,13 @@ func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
 	return users, nil
 
 }
+
+func (r *PgxUserRepo) GetUserByID(ctx context.Context, id int) (*models.User, error) {
+	var u models.User
+	query := `SELECT * FROM users WHERE id = $1`
+	err := r.db.QueryRow(ctx, query, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Password, &u.Role)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}

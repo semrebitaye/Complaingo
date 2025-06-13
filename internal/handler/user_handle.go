@@ -6,6 +6,9 @@ import (
 	"crud_api/internal/usecase"
 	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type UserHandler struct {
@@ -41,4 +44,21 @@ func (h *UserHandler) GetAllUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+}
+
+func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "id not found", http.StatusBadRequest)
+		return
+	}
+	user, err := h.usecase.GetUserByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Failed to get the user by the req id", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
 }

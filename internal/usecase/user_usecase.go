@@ -29,3 +29,7 @@ func (uc *UserUsecase) RegisterUser(ctx context.Context, u *models.User) error {
 func (uc *UserUsecase) GetAllUser(ctx context.Context) ([]*models.User, error) {
 	return uc.repo.GetAllUser(ctx)
 }
+
+func (uc *UserUsecase) GetUserByID(ctx context.Context, id int) (*models.User, error) {
+	return uc.repo.GetUserByID(ctx, id)
+}

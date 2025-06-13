@@ -26,6 +26,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/register", handler.Register).Methods("POST")
 	r.HandleFunc("/users", handler.GetAllUser).Methods("GET")
+	r.HandleFunc("/user/{id}", handler.GetUserByID).Methods("GET")
 
 	port := os.Getenv("PORT")
 	if port == "" {
