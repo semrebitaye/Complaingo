@@ -19,3 +19,25 @@ func (r *PgxUserRepo) CreateUser(ctx context.Context, u *models.User) error {
 	query := `INSERT INTO users (first_name, last_name, email, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	return r.db.QueryRow(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role).Scan(&u.ID)
 }
+
+func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
+	query := `SELECT * FROM users`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		var u models.User
+		err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Password, &u.Role)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, &u)
+	}
+
+	return users, nil
+
+}

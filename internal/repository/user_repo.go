@@ -7,4 +7,5 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, u *models.User) error
+	GetAllUser(ctx context.Context) ([]*models.User, error)
 }
