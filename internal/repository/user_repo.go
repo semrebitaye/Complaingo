@@ -10,4 +10,5 @@ type UserRepository interface {
 	GetAllUser(ctx context.Context) ([]*models.User, error)
 	GetUserByID(ctx context.Context, id int) (*models.User, error)
 	UpdateUser(ctx context.Context, u *models.User) error
+	DeleteUser(ctx context.Context, id int) error
 }

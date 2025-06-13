@@ -80,3 +80,21 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(u)
 }
+
+func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Failed to extract id from the url", http.StatusBadRequest)
+		return
+	}
+
+	err = h.usecase.DeleteUser(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Failed to delete the user", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode("User Deleted Successfully")
+}

@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"crud_api/internal/domain/models"
-	"log"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -57,7 +56,16 @@ func (r *PgxUserRepo) UpdateUser(ctx context.Context, u *models.User) error {
 	query := `UPDATE users SET first_name=$1, last_name=$2, email=$3, password=$4, role=$5 WHERE id=$6`
 	_, err := r.db.Exec(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role, u.ID)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	return nil
+}
+
+func (r *PgxUserRepo) DeleteUser(ctx context.Context, id int) error {
+	query := `DELETE FROM users WHERE id=$1`
+	_, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return err
 	}
 	return nil
 }

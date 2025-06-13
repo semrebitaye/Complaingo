@@ -37,3 +37,7 @@ func (uc *UserUsecase) GetUserByID(ctx context.Context, id int) (*models.User, e
 func (uc *UserUsecase) UpdateUser(ctx context.Context, u *models.User) error {
 	return uc.repo.UpdateUser(ctx, u)
 }
+
+func (uc *UserUsecase) DeleteUser(ctx context.Context, id int) error {
+	return uc.repo.DeleteUser(ctx, id)
+}
