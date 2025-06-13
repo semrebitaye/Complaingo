@@ -31,7 +31,7 @@ func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
 	var users []*models.User
 	for rows.Next() {
 		var u models.User
-		err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Password, &u.Role)
+		err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Password, &u.Role)
 		if err != nil {
 			return nil, err
 		}

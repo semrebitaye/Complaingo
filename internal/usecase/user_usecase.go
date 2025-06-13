@@ -25,3 +25,7 @@ func (uc *UserUsecase) RegisterUser(ctx context.Context, u *models.User) error {
 	u.Password = string(hash)
 	return uc.repo.CreateUser(ctx, u)
 }
+
+func (uc *UserUsecase) GetAllUser(ctx context.Context) ([]*models.User, error) {
+	return uc.repo.GetAllUser(ctx)
+}
