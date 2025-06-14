@@ -24,23 +24,41 @@ func (uc *UserUsecase) RegisterUser(ctx context.Context, u *models.User) error {
 		log.Fatal(err)
 	}
 	u.Password = string(hash)
-	return uc.repo.CreateUser(ctx, u)
+	if err = uc.repo.CreateUser(ctx, u); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (uc *UserUsecase) GetAllUser(ctx context.Context) ([]*models.User, error) {
-	return uc.repo.GetAllUser(ctx)
+	users, err := uc.repo.GetAllUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func (uc *UserUsecase) GetUserByID(ctx context.Context, id int) (*models.User, error) {
-	return uc.repo.GetUserByID(ctx, id)
+	user, err := uc.repo.GetUserByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (uc *UserUsecase) UpdateUser(ctx context.Context, u *models.User) error {
-	return uc.repo.UpdateUser(ctx, u)
+	if err := uc.repo.UpdateUser(ctx, u); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (uc *UserUsecase) DeleteUser(ctx context.Context, id int) error {
-	return uc.repo.DeleteUser(ctx, id)
+	if err := uc.repo.DeleteUser(ctx, id); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (uc *UserUsecase) Login(ctx context.Context, email string, password string) (string, error) {
