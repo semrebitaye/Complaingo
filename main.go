@@ -11,12 +11,17 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
 )
 
 func main() {
-	config.LoadEnvVariable()
+	cfg := config.LoadConfig()
 
-	db := config.ConnectDB()
+	// Connect to DB
+	db, err := pgx.Connect(context.Background(), cfg.DBUrl)
+	if err != nil {
+		log.Fatalf("DB connection failed: %v", err)
+	}
 	defer db.Close(context.Background())
 
 	repo := repository.NewPgxUserRepo(db)
@@ -25,6 +30,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/register", handler.Register).Methods("POST")
+	r.HandleFunc("/login", handler.Login).Methods("POST")
 	r.HandleFunc("/users", handler.GetAllUser).Methods("GET")
 	r.HandleFunc("/user/{id}", handler.GetUserByID).Methods("GET")
 	r.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH")

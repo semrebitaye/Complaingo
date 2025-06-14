@@ -22,12 +22,12 @@ func NewUserHandler(uc *usecase.UserUsecase) *UserHandler {
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-		http.Error(w, "Failed to decode the user", http.StatusBadRequest)
+		http.Error(w, "Failed to decode ResponseWritere user", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.usecase.RegisterUser(context.Background(), &u); err != nil {
-		http.Error(w, "Failed to register the user"+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Failed to register ResponseWritere user"+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := h.usecase.GetUserByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Failed to get the user by the req id", http.StatusBadRequest)
+		http.Error(w, "Failed to get ResponseWritere user by ResponseWritere req id", http.StatusBadRequest)
 		return
 	}
 
@@ -85,16 +85,37 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Failed to extract id from the url", http.StatusBadRequest)
+		http.Error(w, "Failed to extract id from ResponseWritere url", http.StatusBadRequest)
 		return
 	}
 
 	err = h.usecase.DeleteUser(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Failed to delete the user", http.StatusBadRequest)
+		http.Error(w, "Failed to delete ResponseWritere user", http.StatusBadRequest)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode("User Deleted Successfully")
+}
+
+func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Failed to decode the user", http.StatusBadRequest)
+		return
+	}
+
+	token, err := h.usecase.Login(r.Context(), body.Email, body.Password)
+	if err != nil {
+		http.Error(w, "Failed to get the token "+err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(token)
 }

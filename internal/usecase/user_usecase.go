@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"crud_api/internal/domain/models"
+	"crud_api/internal/utility"
 	"crud_api/intf"
 	"log"
 
@@ -40,4 +41,23 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, u *models.User) error {
 
 func (uc *UserUsecase) DeleteUser(ctx context.Context, id int) error {
 	return uc.repo.DeleteUser(ctx, id)
+}
+
+func (uc *UserUsecase) Login(ctx context.Context, email string, password string) (string, error) {
+	user, err := uc.repo.GetByEmail(ctx, email)
+	if err != nil {
+		return "", err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return "", err
+	}
+
+	token, err := utility.GenerateJWT(user.ID, user.Email, user.Role)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }

@@ -11,4 +11,5 @@ type UserInterface interface {
 	GetUserByID(ctx context.Context, id int) (*models.User, error)
 	UpdateUser(ctx context.Context, u *models.User) error
 	DeleteUser(ctx context.Context, id int) error
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
 }

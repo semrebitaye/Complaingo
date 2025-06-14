@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"crud_api/internal/domain/models"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -68,4 +69,18 @@ func (r *PgxUserRepo) DeleteUser(ctx context.Context, id int) error {
 		return err
 	}
 	return nil
+}
+
+func (r *PgxUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	user := &models.User{}
+
+	query := `SELECT email, password FROM users where email=$1`
+	err := r.db.QueryRow(ctx, query, email).Scan(&user.Email, &user.Password)
+
+	if err != nil {
+		log.Println("the requested email does not exist")
+		return nil, err
+	}
+
+	return user, nil
 }
