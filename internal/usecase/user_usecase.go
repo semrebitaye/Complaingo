@@ -5,7 +5,6 @@ import (
 	"crud_api/internal/domain/models"
 	"crud_api/internal/utility"
 	"crud_api/intf"
-	"log"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,7 +20,7 @@ func NewUserUsecase(r intf.UserInterface) *UserUsecase {
 func (uc *UserUsecase) RegisterUser(ctx context.Context, u *models.User) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	u.Password = string(hash)
 	if err = uc.repo.CreateUser(ctx, u); err != nil {
