@@ -22,12 +22,12 @@ func NewUserHandler(uc *usecase.UserUsecase) *UserHandler {
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-		http.Error(w, "Failed to decode ResponseWritere user", http.StatusBadRequest)
+		http.Error(w, "Failed to decode the user"+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := h.usecase.RegisterUser(context.Background(), &u); err != nil {
-		http.Error(w, "Failed to register ResponseWritere user"+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Failed to register the user"+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := h.usecase.GetUserByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Failed to get ResponseWritere user by ResponseWritere req id", http.StatusBadRequest)
+		http.Error(w, "Failed to get the user by the req id"+err.Error(), http.StatusBadRequest)
 		return
 	}
 

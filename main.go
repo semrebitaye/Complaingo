@@ -4,6 +4,7 @@ import (
 	"context"
 	"crud_api/config"
 	"crud_api/internal/handler"
+	"crud_api/internal/middleware"
 	"crud_api/internal/repository"
 	"crud_api/internal/usecase"
 	"log"
@@ -31,10 +32,14 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/register", handler.Register).Methods("POST")
 	r.HandleFunc("/login", handler.Login).Methods("POST")
-	r.HandleFunc("/users", handler.GetAllUser).Methods("GET")
-	r.HandleFunc("/user/{id}", handler.GetUserByID).Methods("GET")
-	r.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH")
-	r.HandleFunc("/users/{id}", handler.DeleteUser).Methods("DELETE")
+
+	authR := r.PathPrefix("/").Subrouter()
+	authR.Use(middleware.Authentiction)
+
+	authR.HandleFunc("/users", handler.GetAllUser).Methods("GET")
+	authR.HandleFunc("/user/{id}", handler.GetUserByID).Methods("GET")
+	authR.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH")
+	authR.HandleFunc("/users/{id}", handler.DeleteUser).Methods("DELETE")
 
 	port := os.Getenv("PORT")
 	if port == "" {
