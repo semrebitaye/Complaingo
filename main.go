@@ -25,7 +25,7 @@ func main() {
 	}
 	defer db.Close(context.Background())
 
-	repo := repository.NewPgxUserRepo(db)
+	repo := repository.NewUserRepository(db)
 	usercase := usecase.NewUserUsecase(repo)
 	handler := handler.NewUserHandler(usercase)
 

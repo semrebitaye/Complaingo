@@ -8,20 +8,20 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type PgxUserRepo struct {
+type UserRepository struct {
 	db *pgx.Conn
 }
 
-func NewPgxUserRepo(db *pgx.Conn) *PgxUserRepo {
-	return &PgxUserRepo{db: db}
+func NewUserRepository(db *pgx.Conn) *UserRepository {
+	return &UserRepository{db: db}
 }
 
-func (r *PgxUserRepo) CreateUser(ctx context.Context, u *models.User) error {
+func (r *UserRepository) CreateUser(ctx context.Context, u *models.User) error {
 	query := `INSERT INTO users (first_name, last_name, email, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	return r.db.QueryRow(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role).Scan(&u.ID)
 }
 
-func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
+func (r *UserRepository) GetAllUser(ctx context.Context) ([]*models.User, error) {
 	query := `SELECT * FROM users`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
@@ -43,7 +43,7 @@ func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
 
 }
 
-func (r *PgxUserRepo) GetUserByID(ctx context.Context, id int) (*models.User, error) {
+func (r *UserRepository) GetUserByID(ctx context.Context, id int) (*models.User, error) {
 	var u models.User
 	query := `SELECT * FROM users WHERE id = $1`
 	err := r.db.QueryRow(ctx, query, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Password, &u.Role)
@@ -53,7 +53,7 @@ func (r *PgxUserRepo) GetUserByID(ctx context.Context, id int) (*models.User, er
 	return &u, nil
 }
 
-func (r *PgxUserRepo) UpdateUser(ctx context.Context, u *models.User) error {
+func (r *UserRepository) UpdateUser(ctx context.Context, u *models.User) error {
 	query := `UPDATE users SET first_name=$1, last_name=$2, email=$3, password=$4, role=$5 WHERE id=$6`
 	_, err := r.db.Exec(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role, u.ID)
 	if err != nil {
@@ -62,7 +62,7 @@ func (r *PgxUserRepo) UpdateUser(ctx context.Context, u *models.User) error {
 	return nil
 }
 
-func (r *PgxUserRepo) DeleteUser(ctx context.Context, id int) error {
+func (r *UserRepository) DeleteUser(ctx context.Context, id int) error {
 	query := `DELETE FROM users WHERE id=$1`
 	_, err := r.db.Exec(ctx, query, id)
 	if err != nil {
@@ -71,7 +71,7 @@ func (r *PgxUserRepo) DeleteUser(ctx context.Context, id int) error {
 	return nil
 }
 
-func (r *PgxUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := &models.User{}
 
 	query := `SELECT email, password FROM users where email=$1`
