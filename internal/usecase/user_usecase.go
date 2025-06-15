@@ -3,17 +3,17 @@ package usecase
 import (
 	"context"
 	"crud_api/internal/domain/models"
+	"crud_api/internal/repository"
 	"crud_api/internal/utility"
-	"crud_api/intf"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserUsecase struct {
-	repo intf.UserInterface
+	repo repository.UserRepository
 }
 
-func NewUserUsecase(r intf.UserInterface) *UserUsecase {
+func NewUserUsecase(r repository.UserRepository) *UserUsecase {
 	return &UserUsecase{repo: r}
 }
 
