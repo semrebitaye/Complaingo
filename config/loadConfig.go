@@ -16,22 +16,22 @@ type Config struct {
 func LoadConfig() *Config {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Error loading .env file: %v\n", err)
 	}
 
 	dbUrl := os.Getenv("DATABASE_URL")
 	if dbUrl == "" {
-		log.Fatal("url not found")
+		log.Fatalf("url not found: %v\n", err)
 	}
 
 	jwtSecret := os.Getenv("secret")
 	if jwtSecret == "" {
-		log.Fatal("secret not found")
+		log.Fatalf("secret not found: %v\n", err)
 	}
 
 	serverPort := os.Getenv("PORT")
 	if serverPort == "" {
-		log.Fatal("port not found")
+		log.Fatalf("port not found: %v\n", err)
 	}
 
 	return &Config{
