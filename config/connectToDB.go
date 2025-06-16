@@ -11,7 +11,7 @@ func ConnectToDB() *pgx.Conn {
 	cfg := LoadConfig()
 	conn, err := pgx.Connect(context.Background(), cfg.DBUrl)
 	if err != nil {
-		log.Fatal("Failed to connect to the database")
+		log.Fatalf("Failed to connect to the database: %v\n", err)
 	}
 	log.Println("Connected to db successfully")
 
