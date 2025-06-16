@@ -7,8 +7,12 @@ import (
 	"crud_api/internal/middleware"
 	"crud_api/internal/repository"
 	"crud_api/internal/usecase"
+	"fmt"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -36,6 +40,32 @@ func main() {
 	authR.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH")
 	authR.HandleFunc("/users/{id}", handler.DeleteUser).Methods("DELETE")
 
-	log.Println("Listening on port", cfg.ServerPort)
-	log.Fatal(http.ListenAndServe(":"+cfg.ServerPort, r))
+	// log.Fatal(http.ListenAndServe(":"+cfg.ServerPort, r))
+
+	// create server
+	srv := http.Server{
+		Addr:    ":" + cfg.ServerPort,
+		Handler: r,
+	}
+
+	go func() {
+		log.Println("Listening on port", cfg.ServerPort)
+		if err := srv.ListenAndServe(); err != nil {
+			fmt.Printf("Stopped Listening: %v\n", err)
+		}
+	}()
+
+	shoutdown, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	<-shoutdown.Done()
+	fmt.Println("Souting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		fmt.Printf("Graceful shotdown failed: %v\n", err)
+	}
+
+	log.Println("Server shoutdown complete")
 }
