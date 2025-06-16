@@ -18,7 +18,13 @@ func NewPgxUserRepo(db *pgx.Conn) *PgxUserRepo {
 
 func (r *PgxUserRepo) CreateUser(ctx context.Context, u *models.User) error {
 	query := `INSERT INTO users (first_name, last_name, email, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING id`
-	return r.db.QueryRow(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role).Scan(&u.ID)
+	err := r.db.QueryRow(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role).Scan(&u.ID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {

@@ -9,20 +9,15 @@ import (
 	"crud_api/internal/usecase"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 )
 
 func main() {
 	cfg := config.LoadConfig()
 
 	// Connect to DB
-	db, err := pgx.Connect(context.Background(), cfg.DBUrl)
-	if err != nil {
-		log.Fatalf("DB connection failed: %v", err)
-	}
+	db := config.ConnectToDB()
 	defer db.Close(context.Background())
 
 	repo := repository.NewPgxUserRepo(db)
@@ -41,10 +36,6 @@ func main() {
 	authR.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH")
 	authR.HandleFunc("/users/{id}", handler.DeleteUser).Methods("DELETE")
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	log.Println("Listening on port", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Println("Listening on port", cfg.ServerPort)
+	log.Fatal(http.ListenAndServe(":"+cfg.ServerPort, r))
 }
