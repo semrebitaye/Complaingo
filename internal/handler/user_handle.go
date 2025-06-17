@@ -1,13 +1,14 @@
 package handler
 
 import (
-	"context"
 	"crud_api/internal/domain/models"
 	"crud_api/internal/middleware"
 	"crud_api/internal/usecase"
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	appErrors "crud_api/internal/errors"
 
 	"github.com/gorilla/mux"
 )
@@ -23,12 +24,12 @@ func NewUserHandler(uc *usecase.UserUsecase) *UserHandler {
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-		middleware.WriteError(w, http.StatusBadRequest, "user data invalid")
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalid user payload"))
 		return
 	}
 
-	if err := h.usecase.RegisterUser(context.Background(), &u); err != nil {
-		middleware.WriteError(w, http.StatusInternalServerError, "failed to register the user")
+	if err := h.usecase.RegisterUser(r.Context(), &u); err != nil {
+		middleware.WriteError(w, err)
 		return
 	}
 
@@ -39,7 +40,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) GetAllUser(w http.ResponseWriter, r *http.Request) {
 	users, err := h.usecase.GetAllUser(r.Context())
 	if err != nil {
-		middleware.WriteError(w, http.StatusBadRequest, "failed to fetch the user")
+		middleware.WriteError(w, err)
 		return
 	}
 
@@ -51,12 +52,12 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		middleware.WriteError(w, http.StatusBadRequest, "id not found")
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalid id"))
 		return
 	}
 	user, err := h.usecase.GetUserByID(r.Context(), id)
 	if err != nil {
-		middleware.WriteError(w, http.StatusNotFound, "Failed to get the user by the req id")
+		middleware.WriteError(w, err)
 		return
 	}
 
@@ -67,21 +68,21 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	u := &models.User{}
 	if err := json.NewDecoder(r.Body).Decode(u); err != nil {
-		middleware.WriteError(w, http.StatusBadRequest, "user data invalid")
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalide user data"))
 		return
 	}
 
 	idStr := mux.Vars(r)["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		middleware.WriteError(w, http.StatusBadRequest, "id not found")
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("id invalid"))
 		return
 	}
 
 	u.ID = id
 	err = h.usecase.UpdateUser(r.Context(), u)
 	if err != nil {
-		middleware.WriteError(w, http.StatusInternalServerError, "Failed to update the user")
+		middleware.WriteError(w, err)
 		return
 	}
 
@@ -93,12 +94,12 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		middleware.WriteError(w, http.StatusBadRequest, "Failed to extract the id from the req url")
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("id invalid"))
 	}
 
 	err = h.usecase.DeleteUser(r.Context(), id)
 	if err != nil {
-		middleware.WriteError(w, http.StatusNotFound, "Failed to delete the user by the req id")
+		middleware.WriteError(w, err)
 		return
 	}
 
@@ -113,13 +114,13 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		middleware.WriteError(w, http.StatusBadRequest, "login request invalid")
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalid login data"))
 		return
 	}
 
 	token, err := h.usecase.Login(r.Context(), body.Email, body.Password)
 	if err != nil {
-		middleware.WriteError(w, http.StatusUnauthorized, "user credential invalid")
+		middleware.WriteError(w, err)
 		return
 	}
 

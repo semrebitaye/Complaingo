@@ -33,7 +33,7 @@ func main() {
 	r.HandleFunc("/login", handler.Login).Methods("POST")
 
 	authR := r.PathPrefix("/").Subrouter()
-	authR.Use(middleware.Authentiction)
+	authR.Use(middleware.Authentication)
 
 	authR.HandleFunc("/users", handler.GetAllUser).Methods("GET")
 	authR.HandleFunc("/user/{id}", handler.GetUserByID).Methods("GET")
