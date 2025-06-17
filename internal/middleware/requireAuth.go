@@ -12,14 +12,14 @@ func Authentiction(next http.Handler) http.Handler {
 		// get the bearer of the req body
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "no token provided", http.StatusUnauthorized)
+			WriteError(w, http.StatusUnauthorized, "no token provided")
 			return
 		}
 		tokeStr := strings.TrimPrefix(authHeader, "Bearer ")
 
 		claims, err := utility.ValidateToken(tokeStr)
 		if err != nil {
-			http.Error(w, "claim not authorized", http.StatusUnauthorized)
+			WriteError(w, http.StatusUnauthorized, "claim not authorized")
 			return
 		}
 		ctx := context.WithValue(r.Context(), "user_id", int(claims["user_id"].(float64)))
