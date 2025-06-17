@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"crud_api/internal/domain/models"
-	"errors"
-	"fmt"
+
+	appErrors "crud_api/internal/errors"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -22,7 +22,7 @@ func (r *PgxUserRepo) CreateUser(ctx context.Context, u *models.User) error {
 	err := r.db.QueryRow(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role).Scan(&u.ID)
 
 	if err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
+		return appErrors.ErrDbFailure.Wrap(err, "failed to query the user")
 	}
 
 	return nil
@@ -32,7 +32,7 @@ func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
 	query := `SELECT * FROM users`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query the user %v", err)
+		return nil, appErrors.ErrDbFailure.Wrap(err, "query failed")
 	}
 	defer rows.Close()
 
@@ -41,7 +41,7 @@ func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
 		var u models.User
 		err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Password, &u.Role)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan user row: %w", err)
+			return nil, appErrors.ErrUserNotFound.New("failed to scan user row")
 		}
 		users = append(users, &u)
 	}
@@ -55,10 +55,10 @@ func (r *PgxUserRepo) GetUserByID(ctx context.Context, id int) (*models.User, er
 	query := `SELECT * FROM users WHERE id = $1`
 	err := r.db.QueryRow(ctx, query, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Password, &u.Role)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("user %v not found", id)
+		if err == pgx.ErrNoRows {
+			return nil, appErrors.ErrUserNotFound.New("user not found the required id")
 		}
-		return nil, fmt.Errorf("failed to get user by id: %w", err)
+		return nil, appErrors.ErrDbFailure.New("query failed")
 	}
 	return &u, nil
 }
@@ -67,16 +67,19 @@ func (r *PgxUserRepo) UpdateUser(ctx context.Context, u *models.User) error {
 	query := `UPDATE users SET first_name=$1, last_name=$2, email=$3, password=$4, role=$5 WHERE id=$6`
 	_, err := r.db.Exec(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role, u.ID)
 	if err != nil {
-		return fmt.Errorf("failed to update the user: %w", err)
+		return appErrors.ErrDbFailure.New("unable to update user")
 	}
 	return nil
 }
 
 func (r *PgxUserRepo) DeleteUser(ctx context.Context, id int) error {
 	query := `DELETE FROM users WHERE id=$1`
-	_, err := r.db.Exec(ctx, query, id)
+	res, err := r.db.Exec(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+		if res.RowsAffected() == 0 {
+			return appErrors.ErrUserNotFound.New("no user found to delete")
+		}
+		return appErrors.ErrDbFailure.Wrap(err, "failed to excute delete query")
 	}
 	return nil
 }
@@ -88,10 +91,10 @@ func (r *PgxUserRepo) GetByEmail(ctx context.Context, email string) (*models.Use
 	err := r.db.QueryRow(ctx, query, email).Scan(&user.Email, &user.Password)
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("email %s not found", email)
+		if err == pgx.ErrNoRows {
+			return nil, appErrors.ErrUserNotFound.New("user not found with email")
 		}
-		return nil, fmt.Errorf("failed to query user by email: %w", err)
+		return nil, appErrors.ErrDbFailure.New("query failed")
 	}
 
 	return user, nil
