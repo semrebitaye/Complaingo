@@ -40,8 +40,6 @@ func main() {
 	authR.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH")
 	authR.HandleFunc("/users/{id}", handler.DeleteUser).Methods("DELETE")
 
-	// log.Fatal(http.ListenAndServe(":"+cfg.ServerPort, r))
-
 	// create server
 	srv := http.Server{
 		Addr:    ":" + cfg.ServerPort,
