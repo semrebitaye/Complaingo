@@ -43,7 +43,7 @@ func main() {
 	// create server
 	srv := http.Server{
 		Addr:    ":" + cfg.ServerPort,
-		Handler: r,
+		Handler: middleware.RecoverMiddleware(r),
 	}
 
 	go func() {
