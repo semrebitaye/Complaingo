@@ -5,6 +5,7 @@ import (
 	"crud_api/internal/domain/models"
 	"crud_api/internal/repository"
 	"crud_api/internal/utility"
+	"crud_api/internal/validation"
 
 	"github.com/joomcode/errorx"
 	"golang.org/x/crypto/bcrypt"
@@ -21,6 +22,11 @@ func NewUserUsecase(r repository.UserRepository) *UserUsecase {
 }
 
 func (uc *UserUsecase) RegisterUser(ctx context.Context, u *models.User) error {
+	// check validation
+	if err := validation.ValidateUser(u); err != nil {
+		return appErrors.ErrInvalidPayload.Wrap(err, "usecase: validation failed")
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return appErrors.ErrDbFailure.New("usecase: Failed to generate password")
@@ -45,6 +51,11 @@ func (uc *UserUsecase) GetAllUser(ctx context.Context) ([]*models.User, error) {
 }
 
 func (uc *UserUsecase) GetUserByID(ctx context.Context, id int) (*models.User, error) {
+	// check validation
+	if err := validation.ValidateId(id); err != nil {
+		return nil, appErrors.ErrInvalidPayload.New("usecase: Invalid user id")
+	}
+
 	user, err := uc.repo.GetUserByID(ctx, id)
 	if err != nil {
 		if errorx.IsOfType(err, appErrors.ErrUserNotFound) {
@@ -57,6 +68,10 @@ func (uc *UserUsecase) GetUserByID(ctx context.Context, id int) (*models.User, e
 }
 
 func (uc *UserUsecase) UpdateUser(ctx context.Context, u *models.User) error {
+	if err := validation.ValidateUser(u); err != nil {
+		return appErrors.ErrDbFailure.Wrap(err, "usecase: validation failed")
+	}
+
 	if err := uc.repo.UpdateUser(ctx, u); err != nil {
 		return appErrors.ErrDbFailure.Wrap(err, "failed to update user in usecase")
 	}
@@ -64,6 +79,10 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, u *models.User) error {
 }
 
 func (uc *UserUsecase) DeleteUser(ctx context.Context, id int) error {
+	if err := validation.ValidateId(id); err != nil {
+		return appErrors.ErrInvalidPayload.New("validation of id failed")
+	}
+
 	if err := uc.repo.DeleteUser(ctx, id); err != nil {
 		return appErrors.ErrDbFailure.Wrap(err, "usecase: failed to get user to be deleted")
 	}
@@ -71,6 +90,10 @@ func (uc *UserUsecase) DeleteUser(ctx context.Context, id int) error {
 }
 
 func (uc *UserUsecase) Login(ctx context.Context, email string, password string) (string, error) {
+	if err := validation.ValidateLoginInput(email, password); err != nil {
+		return "", appErrors.ErrInvalidPayload.Wrap(err, "usecase: Invalid login input")
+	}
+
 	user, err := uc.repo.GetByEmail(ctx, email)
 	if err != nil {
 		return "", appErrors.ErrUserNotFound.Wrap(err, "usecase: login failed, email not found")

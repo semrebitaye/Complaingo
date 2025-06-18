@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"crud_api/internal/domain/models"
-
 	appErrors "crud_api/internal/errors"
 
 	"github.com/jackc/pgx/v5"
