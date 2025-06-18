@@ -1,17 +1,17 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"runtime/debug"
+
+	appErrors "crud_api/internal/errors"
 )
 
 func RecoverMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("Recovered from panic: %v\nStack trace: \n%s", r, debug.Stack())
-				WriteError(w, http.StatusInternalServerError, "internal server error")
+				WriteError(w, appErrors.ErrDbFailure.New("Recovered from panic: %v\nStack trace: \n%s", r, debug.Stack()))
 			}
 		}()
 		next.ServeHTTP(w, r)
