@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	appErrors "crud_api/internal/errors"
+
 	"github.com/joho/godotenv"
 )
 
@@ -21,17 +23,17 @@ func LoadConfig() *Config {
 
 	dbUrl := os.Getenv("DATABASE_URL")
 	if dbUrl == "" {
-		log.Fatalf("url not found: %v\n", err)
+		panic(appErrors.ErrInvalidPayload.New("url not found"))
 	}
 
 	jwtSecret := os.Getenv("secret")
 	if jwtSecret == "" {
-		log.Fatalf("secret not found: %v\n", err)
+		panic(appErrors.ErrInvalidPayload.New("Secret not found"))
 	}
 
 	serverPort := os.Getenv("PORT")
 	if serverPort == "" {
-		log.Fatalf("port not found: %v\n", err)
+		panic(appErrors.ErrInvalidPayload.Wrap(err, "port must be a number"))
 	}
 
 	return &Config{
