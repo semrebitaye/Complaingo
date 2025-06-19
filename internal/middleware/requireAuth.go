@@ -9,6 +9,14 @@ import (
 	appErrors "crud_api/internal/errors"
 )
 
+type contextKey string
+
+const (
+	ContextUserId contextKey = "user_id"
+	ContextEmail  contextKey = "email"
+	ContextRole   contextKey = "role"
+)
+
 func Authentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get the bearer of the req body
@@ -21,13 +29,21 @@ func Authentication(next http.Handler) http.Handler {
 
 		claims, err := utility.ValidateToken(tokeStr)
 		if err != nil {
-			WriteError(w, appErrors.ErrUnauthorized.New("token not valid"))
-			appErrors.ErrUnauthorized.New("claim not authorized")
+			WriteError(w, appErrors.ErrUnauthorized.Wrap(err, "Claim not authorized"))
 			return
 		}
-		ctx := context.WithValue(r.Context(), "user_id", int(claims["user_id"].(float64)))
-		ctx = context.WithValue(ctx, "email", claims["email"])
-		ctx = context.WithValue(ctx, "role", claims["role"])
+
+		userIdFloat, ok := claims["user_id"].(float64)
+		if !ok {
+			WriteError(w, appErrors.ErrUnauthorized.New("Invalid user id"))
+		}
+
+		email := claims["email"]
+		role := claims["role"]
+
+		ctx := context.WithValue(r.Context(), ContextUserId, int(userIdFloat))
+		ctx = context.WithValue(ctx, ContextEmail, email)
+		ctx = context.WithValue(ctx, ContextRole, role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
