@@ -1,5 +1,12 @@
 package models
 
+type Role string
+
+const (
+	AdminRole Role = "admin"
+	UerRole   Role = "user"
+)
+
 type User struct {
 	ID        int    `json:"id"`
 	FirstName string `json:"first_name"`
