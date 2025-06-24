@@ -8,7 +8,6 @@ import (
 	"crud_api/internal/validation"
 
 	"github.com/joomcode/errorx"
-	"golang.org/x/crypto/bcrypt"
 
 	appErrors "crud_api/internal/errors"
 )
@@ -22,16 +21,26 @@ func NewUserUsecase(r repository.UserRepository) *UserUsecase {
 }
 
 func (uc *UserUsecase) RegisterUser(ctx context.Context, u *models.User) error {
-	// check validation
+	// validate user input
 	if err := validation.ValidateUser(u); err != nil {
 		return appErrors.ErrInvalidPayload.Wrap(err, "usecase: validation failed")
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	// get role_id from role name
+	roleID, err := uc.repo.GetRoleByName(ctx, u.Role)
 	if err != nil {
-		return appErrors.ErrDbFailure.New("usecase: Failed to generate password")
+		return appErrors.ErrInvalidPayload.Wrap(err, "usecase: role not found")
 	}
-	u.Password = string(hash)
+	u.RoleID = roleID
+
+	// hash the password
+	hashed, err := utility.HashPassword(u.Password)
+	if err != nil {
+		return appErrors.ErrInvalidPayload.Wrap(err, "password hashing failed")
+	}
+	u.Password = hashed
+
+	// create user in db
 	err = uc.repo.CreateUser(ctx, u)
 	if err != nil {
 		if errorx.IsOfType(err, appErrors.ErrUserDuplicate) {
@@ -90,20 +99,29 @@ func (uc *UserUsecase) DeleteUser(ctx context.Context, id int) error {
 }
 
 func (uc *UserUsecase) Login(ctx context.Context, email string, password string) (string, error) {
-	if err := validation.ValidateLoginInput(email, password); err != nil {
+	// validate email and password input
+	input := validation.LoginInput{
+		Email:    email,
+		Password: password,
+	}
+
+	if err := input.ValidateLoginInput(); err != nil {
 		return "", appErrors.ErrInvalidPayload.Wrap(err, "usecase: Invalid login input")
 	}
 
+	// fetch user by email
 	user, err := uc.repo.GetByEmail(ctx, email)
 	if err != nil {
 		return "", appErrors.ErrUserNotFound.Wrap(err, "usecase: login failed, email not found")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	// compare hashed password with the input password
+	err = utility.ComparePassword(user.Password, password)
 	if err != nil {
 		return "", appErrors.ErrUnauthorized.New("Invalid credential")
 	}
 
+	// generate jwt token
 	token, err := utility.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		return "", appErrors.ErrDbFailure.Wrap(err, "failed to generate jwt")

@@ -24,15 +24,14 @@ func ValidateId(id int) error {
 	)
 }
 
-func ValidateLoginInput(email, password string) error {
-	return validation.ValidateStruct(&struct {
-		Email    string
-		Password string
-	}{
-		Email:    email,
-		Password: password,
-	},
-		validation.Field(&email, validation.Required, is.Email),
-		validation.Field(&password, validation.Required, validation.Length(6, 100)),
+type LoginInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (l LoginInput) ValidateLoginInput() error {
+	return validation.ValidateStruct(&l,
+		validation.Field(&l.Email, validation.Required, is.Email),
+		validation.Field(&l.Password, validation.Required, validation.Length(6, 100)),
 	)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crud_api/internal/domain/models"
 	appErrors "crud_api/internal/errors"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -17,18 +18,34 @@ func NewPgxUserRepo(db *pgx.Conn) *PgxUserRepo {
 }
 
 func (r *PgxUserRepo) CreateUser(ctx context.Context, u *models.User) error {
-	query := `INSERT INTO users (first_name, last_name, email, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING id`
-	err := r.db.QueryRow(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role).Scan(&u.ID)
+	var roleID int
+	err := r.db.QueryRow(ctx, `SELECT id FROM roles WHERE name=$1`, u.Role).Scan(&roleID)
+	if err != nil {
+		return appErrors.ErrInvalidPayload.New("Invalid role")
+	}
+
+	query := `
+INSERT INTO users (first_name, last_name, email, password, role_id)
+VALUES ($1, $2, $3, $4, (SELECT id FROM roles WHERE name = $5))
+RETURNING id`
+	err = r.db.QueryRow(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role).Scan(&u.ID)
 
 	if err != nil {
 		return appErrors.ErrDbFailure.Wrap(err, "failed to query the user")
 	}
 
+	u.RoleID = roleID
+
 	return nil
 }
 
 func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
-	query := `SELECT * FROM users`
+	query := `
+	SELECT u.id, u.first_name, u.last_name, u.email, u.password, r.name as role, u.role_id
+	FROM users u
+	LEFT JOIN roles r ON u.role_id = r.id
+	`
+
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, appErrors.ErrDbFailure.Wrap(err, "query failed")
@@ -38,15 +55,15 @@ func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
 	var users []*models.User
 	for rows.Next() {
 		var u models.User
-		err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Password, &u.Role)
+		err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Password, &u.Role, &u.RoleID)
 		if err != nil {
 			return nil, appErrors.ErrUserNotFound.New("failed to scan user row")
 		}
 		users = append(users, &u)
 	}
 
+	log.Printf("✅ Retrieved %d users\n", len(users))
 	return users, nil
-
 }
 
 func (r *PgxUserRepo) GetUserByID(ctx context.Context, id int) (*models.User, error) {
@@ -60,6 +77,17 @@ func (r *PgxUserRepo) GetUserByID(ctx context.Context, id int) (*models.User, er
 		return nil, appErrors.ErrDbFailure.New("query failed")
 	}
 	return &u, nil
+}
+
+func (r *PgxUserRepo) GetRoleByName(ctx context.Context, roleName string) (int, error) {
+	var id int
+
+	query := `SELECT id FROM roles WHERE name=$1`
+	err := r.db.QueryRow(ctx, query, roleName).Scan(&id)
+	if err != nil {
+		return 0, appErrors.ErrInvalidPayload.Wrap(err, "Invalid Role Name")
+	}
+	return id, nil
 }
 
 func (r *PgxUserRepo) UpdateUser(ctx context.Context, u *models.User) error {
@@ -86,8 +114,11 @@ func (r *PgxUserRepo) DeleteUser(ctx context.Context, id int) error {
 func (r *PgxUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := &models.User{}
 
-	query := `SELECT email, password FROM users where email=$1`
-	err := r.db.QueryRow(ctx, query, email).Scan(&user.Email, &user.Password)
+	query := `SELECT u.id, u.email, u.password, r.name as role
+	FROM users u
+	LEFT JOIN roles r on u.role_id = r.id
+	WHERE u.email=$1`
+	err := r.db.QueryRow(ctx, query, email).Scan(&user.ID, &user.Email, &user.Password, &user.Role)
 
 	if err != nil {
 		if err == pgx.ErrNoRows {

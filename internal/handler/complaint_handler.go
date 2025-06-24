@@ -4,6 +4,7 @@ import (
 	"crud_api/internal/domain/models"
 	"crud_api/internal/middleware"
 	"crud_api/internal/usecase"
+	"crud_api/internal/utility"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -14,7 +15,11 @@ import (
 )
 
 type ComplaintHandler struct {
-	usecase usecase.ComplaintUsecase
+	usecase *usecase.ComplaintUsecase
+}
+
+func NewComplaintHandler(usecase *usecase.ComplaintUsecase) *ComplaintHandler {
+	return &ComplaintHandler{usecase: usecase}
 }
 
 func (uc *ComplaintHandler) CreateComplaint(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +32,7 @@ func (uc *ComplaintHandler) CreateComplaint(w http.ResponseWriter, r *http.Reque
 
 	err = uc.usecase.CreateComplaint(r.Context(), &c)
 	if err != nil {
-		middleware.WriteError(w, err)
+		middleware.WriteError(w, appErrors.ErrDbFailure.Wrap(err, "failed to create complaint"))
 		return
 	}
 
@@ -37,13 +42,13 @@ func (uc *ComplaintHandler) CreateComplaint(w http.ResponseWriter, r *http.Reque
 
 func (uc *ComplaintHandler) GetComplaintByRole(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
-	id, err := strconv.Atoi(idStr)
+	user_id, err := strconv.Atoi(idStr)
 	if err != nil {
 		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalid id"))
 		return
 	}
 
-	complaint, err := uc.usecase.GetComplaintByRole(r.Context(), id)
+	complaint, err := uc.usecase.GetComplaintByRole(r.Context(), user_id)
 	if err != nil {
 		middleware.WriteError(w, err)
 		return
@@ -55,19 +60,20 @@ func (uc *ComplaintHandler) GetComplaintByRole(w http.ResponseWriter, r *http.Re
 
 func (uc *ComplaintHandler) UserMarkResolved(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
-	id, err := strconv.Atoi(idStr)
+	complaint_id, err := strconv.Atoi(idStr)
 	if err != nil {
 		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalid id"))
 		return
 	}
 
-	if err := uc.usecase.UserMarkResolved(r.Context(), id); err != nil {
+	if err := uc.usecase.UserMarkResolved(r.Context(), complaint_id); err != nil {
 		middleware.WriteError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"id":      complaint_id,
 		"Message": "Complaint updated Successfully",
 	})
 }
@@ -111,6 +117,39 @@ func (uc *ComplaintHandler) AdminUpdateComplaints(w http.ResponseWriter, r *http
 }
 
 // complaint_messages table
+func (uc *ComplaintHandler) InsertCoplaintMessage(w http.ResponseWriter, r *http.Request) {
+	complaintIdStr := mux.Vars(r)["id"]
+	complaintID, err := strconv.Atoi(complaintIdStr)
+	if err != nil {
+		middleware.WriteError(w, appErrors.ErrDbFailure.New("invalid id"))
+		return
+	}
+
+	var cm models.ComplaintMessages
+	if err := json.NewDecoder(r.Body).Decode(&cm); err != nil {
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "Invalid payload"))
+		return
+	}
+
+	senderID := middleware.GetUserId(r.Context())
+	message := &models.ComplaintMessages{
+		ComplaintID: complaintID,
+		SenderID:    senderID,
+		ParentID:    cm.ParentID,
+		Message:     cm.Message,
+		FileUrl:     cm.FileUrl,
+	}
+
+	err = uc.usecase.InsertCoplaintMessage(r.Context(), message)
+	if err != nil {
+		middleware.WriteError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(message)
+}
+
 func (uc *ComplaintHandler) GetMessagesByComplaint(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
 	complaintID, err := strconv.Atoi(idStr)
@@ -122,27 +161,63 @@ func (uc *ComplaintHandler) GetMessagesByComplaint(w http.ResponseWriter, r *htt
 	message, err := uc.usecase.GetMessagesByComplaint(r.Context(), complaintID)
 	if err != nil {
 		middleware.WriteError(w, err)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(message)
 }
 
-func (uc *ComplaintHandler) ReplayToMessage(w http.ResponseWriter, r *http.Request) {
-	var msg models.ComplaintMessages
-	err := json.NewDecoder(r.Body).Decode(&msg)
+func (uc *ComplaintHandler) ReplyToMessage(w http.ResponseWriter, r *http.Request) {
+	// parse complaintID from url
+	complaintIdStr := mux.Vars(r)["id"]
+	complaintID, err := strconv.Atoi(complaintIdStr)
 	if err != nil {
-		middleware.WriteError(w, appErrors.ErrDbFailure.Wrap(err, "Invalid payload"))
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalid id"))
 		return
 	}
-	if err := uc.usecase.ReplayToMessage(r.Context(), &msg); err != nil {
+
+	// parse the form (text and file)
+	err = r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "can't parse multipart form"))
+		return
+	}
+
+	// extract text message
+	message := r.FormValue("message")
+	if message == "" {
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "message field is required"))
+		return
+	}
+
+	// handle file
+	var fileUrl string
+	file, handler, err := r.FormFile("file")
+	if err == nil && handler != nil {
+		defer file.Close()
+		fileUrl, err = utility.SaveUploadFile(file, *handler)
+		if err != nil {
+			middleware.WriteError(w, err)
+			return
+		}
+	}
+
+	// prepare message model
+	msg := models.ComplaintMessages{
+		Message:     message,
+		ComplaintID: complaintID,
+		FileUrl:     fileUrl,
+	}
+
+	if err := uc.usecase.ReplyToMessage(r.Context(), &msg); err != nil {
 		middleware.WriteError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"Message": "Replay Message added successfully",
+		"Message": "Reply Message added successfully",
 		"data":    msg,
 	})
 }

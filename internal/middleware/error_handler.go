@@ -38,5 +38,5 @@ func WriteError(w http.ResponseWriter, err error) {
 
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(ErrorResponse{Code: code, Type: typ, Message: msg})
-
+	
 }

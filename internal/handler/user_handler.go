@@ -4,7 +4,9 @@ import (
 	"crud_api/internal/domain/models"
 	"crud_api/internal/middleware"
 	"crud_api/internal/usecase"
+	"crud_api/internal/validation"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -38,8 +40,11 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) GetAllUser(w http.ResponseWriter, r *http.Request) {
+	log.Println("🧠 User role from context:", middleware.GetUserRole(r.Context()))
+
 	users, err := h.usecase.GetAllUser(r.Context())
 	if err != nil {
+		log.Panicln("users not found ", users)
 		middleware.WriteError(w, err)
 		return
 	}
@@ -108,11 +113,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
+	var body validation.LoginInput
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalid login data"))
 		return

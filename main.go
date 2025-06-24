@@ -26,19 +26,38 @@ func main() {
 
 	repo := repository.NewPgxUserRepo(db)
 	usercase := usecase.NewUserUsecase(repo)
-	handler := handler.NewUserHandler(usercase)
+	userHandler := handler.NewUserHandler(usercase)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/register", handler.Register).Methods("POST")
-	r.HandleFunc("/login", handler.Login).Methods("POST")
+	fs := http.FileServer(http.Dir("/uploads"))
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+
+	r.HandleFunc("/register", userHandler.Register).Methods("POST")
+	r.HandleFunc("/login", userHandler.Login).Methods("POST")
 
 	authR := r.PathPrefix("/").Subrouter()
 	authR.Use(middleware.Authentication)
 
-	authR.HandleFunc("/users", handler.GetAllUser).Methods("GET")
-	authR.HandleFunc("/user/{id}", handler.GetUserByID).Methods("GET")
-	authR.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH")
-	authR.HandleFunc("/users/{id}", handler.DeleteUser).Methods("DELETE")
+	authR.Handle("/users", middleware.RBAC("admin", "user")(http.HandlerFunc(userHandler.GetAllUser))).Methods("GET")
+	authR.Handle("/user/{id}", middleware.RBAC("admin", "user")(http.HandlerFunc(userHandler.GetUserByID))).Methods("GET")
+	authR.Handle("/users/{id}", middleware.RBAC("admin")(http.HandlerFunc(userHandler.UpdateUser))).Methods("PATCH")
+	authR.Handle("/users/{id}", middleware.RBAC("admin")(http.HandlerFunc(userHandler.DeleteUser))).Methods("DELETE")
+
+	complaintRepo := repository.NewPgxComplaintRepo(db)
+	complaintMessageRepo := repository.NewPgxComplaintMessageRepo(db)
+	complaintUsecase := usecase.NewComplaintUsecase(complaintRepo, complaintMessageRepo)
+
+	complaintHandler := handler.NewComplaintHandler(complaintUsecase)
+
+	authR.Handle("/complaints", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.CreateComplaint))).Methods("POST")
+	authR.Handle("/complaints/user/{id}", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.GetComplaintByRole))).Methods("GET")
+	authR.Handle("/complaints/{id}/resolve", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.UserMarkResolved))).Methods("PATCH")
+	authR.Handle("/complaints", middleware.RBAC("admin")(http.HandlerFunc(complaintHandler.GetAllComplaintByRole))).Methods("GET")
+	authR.Handle("/complaints/{id}/status", middleware.RBAC("admin")(http.HandlerFunc(complaintHandler.AdminUpdateComplaints))).Methods("PATCH")
+
+	authR.Handle("/complaints/{id}/messages", middleware.RBAC("admin", "user")(http.HandlerFunc(complaintHandler.InsertCoplaintMessage))).Methods("POST")
+	authR.Handle("/complaints/{id}/messages", middleware.RBAC("admin", "user")(http.HandlerFunc(complaintHandler.GetMessagesByComplaint))).Methods("GET")
+	authR.Handle("/complaints/{id}/reply", middleware.RBAC("admin", "user")(http.HandlerFunc(complaintHandler.ReplyToMessage))).Methods("POST")
 
 	// create server
 	srv := http.Server{

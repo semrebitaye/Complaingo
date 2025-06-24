@@ -7,7 +7,20 @@ import (
 	appErrors "crud_api/internal/errors"
 
 	"github.com/golang-jwt/jwt"
+	"golang.org/x/crypto/bcrypt"
 )
+
+func HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", appErrors.ErrDbFailure.New("usecase: Failed to generate password")
+	}
+	return string(hash), nil
+}
+
+func ComparePassword(hashed, plain string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(plain))
+}
 
 var cfg = config.LoadConfig()
 

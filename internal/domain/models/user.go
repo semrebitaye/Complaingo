@@ -14,4 +14,5 @@ type User struct {
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 	Role      string `json:"role"`
+	RoleID    int    `json:"role_id"`
 }
