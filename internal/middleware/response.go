@@ -9,6 +9,23 @@ import (
 	errs "crud_api/internal/errors"
 )
 
+type SuccessResponse struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+func WriteSuccess(w http.ResponseWriter, data interface{}, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(SuccessResponse{
+		Code:    http.StatusOK,
+		Message: message,
+		Data:    data,
+	})
+}
+
 type ErrorResponse struct {
 	Code    int    `json:"code"`
 	Type    string `json:"type"`
@@ -38,5 +55,5 @@ func WriteError(w http.ResponseWriter, err error) {
 
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(ErrorResponse{Code: code, Type: typ, Message: msg})
-	
+
 }

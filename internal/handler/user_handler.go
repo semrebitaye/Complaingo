@@ -35,8 +35,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(u)
+	middleware.WriteSuccess(w, u, "User Registered Successfully")
 }
 
 func (h *UserHandler) GetAllUser(w http.ResponseWriter, r *http.Request) {
@@ -49,8 +48,7 @@ func (h *UserHandler) GetAllUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	middleware.WriteSuccess(w, users, "All users retrieved Successfully")
 }
 
 func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -66,8 +64,7 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	middleware.WriteSuccess(w, user, "user successfully get by pk id")
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -91,8 +88,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(u)
+	middleware.WriteSuccess(w, u, "User updated successfully")
 }
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -108,8 +104,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode("User Deleted Successfully")
+	middleware.WriteSuccess(w, nil, "User Deleted Successfully")
 }
 
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -125,6 +120,5 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(token)
+	middleware.WriteSuccess(w, token, "User login successfully")
 }

@@ -36,8 +36,7 @@ func (uc *ComplaintHandler) CreateComplaint(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(c)
+	middleware.WriteSuccess(w, c, "Complaint Creted Successfully")
 }
 
 func (uc *ComplaintHandler) GetComplaintByRole(w http.ResponseWriter, r *http.Request) {
@@ -54,8 +53,7 @@ func (uc *ComplaintHandler) GetComplaintByRole(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(complaint)
+	middleware.WriteSuccess(w, complaint, "complaint get successfully by pk user_id")
 }
 
 func (uc *ComplaintHandler) UserMarkResolved(w http.ResponseWriter, r *http.Request) {
@@ -71,11 +69,7 @@ func (uc *ComplaintHandler) UserMarkResolved(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"id":      complaint_id,
-		"Message": "Complaint updated Successfully",
-	})
+	middleware.WriteSuccess(w, complaint_id, "Complait updated successfully")
 }
 
 func (uc *ComplaintHandler) GetAllComplaintByRole(w http.ResponseWriter, r *http.Request) {
@@ -85,8 +79,7 @@ func (uc *ComplaintHandler) GetAllComplaintByRole(w http.ResponseWriter, r *http
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(complaints)
+	middleware.WriteSuccess(w, complaints, "All compliants successfully")
 }
 
 func (uc *ComplaintHandler) AdminUpdateComplaints(w http.ResponseWriter, r *http.Request) {
@@ -110,10 +103,7 @@ func (uc *ComplaintHandler) AdminUpdateComplaints(w http.ResponseWriter, r *http
 		middleware.WriteError(w, err)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"data": "Complaint updated successfully",
-	})
+	middleware.WriteSuccess(w, body.Status, "Complaint Updated Successfully")
 }
 
 // complaint_messages table
@@ -146,8 +136,7 @@ func (uc *ComplaintHandler) InsertCoplaintMessage(w http.ResponseWriter, r *http
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(message)
+	middleware.WriteSuccess(w, message, "Message created Successfully")
 }
 
 func (uc *ComplaintHandler) GetMessagesByComplaint(w http.ResponseWriter, r *http.Request) {
@@ -164,8 +153,7 @@ func (uc *ComplaintHandler) GetMessagesByComplaint(w http.ResponseWriter, r *htt
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(message)
+	middleware.WriteSuccess(w, message, "Message successfully fetched by complaint id")
 }
 
 func (uc *ComplaintHandler) ReplyToMessage(w http.ResponseWriter, r *http.Request) {
@@ -215,9 +203,5 @@ func (uc *ComplaintHandler) ReplyToMessage(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"Message": "Reply Message added successfully",
-		"data":    msg,
-	})
+	middleware.WriteSuccess(w, msg, "Reply Message added successfully")
 }
