@@ -203,7 +203,7 @@ func (uc *ComplaintHandler) ReplyToMessage(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	// prepare message model
+	// prepare message modele
 	msg := models.ComplaintMessages{
 		Message:     message,
 		ComplaintID: complaintID,
