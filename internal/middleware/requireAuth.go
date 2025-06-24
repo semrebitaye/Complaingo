@@ -3,18 +3,19 @@ package middleware
 import (
 	"context"
 	"crud_api/internal/utility"
+	"log"
 	"net/http"
 	"strings"
 
 	appErrors "crud_api/internal/errors"
 )
 
-type contextKey string
+type ContextKey string
 
 const (
-	ContextUserId contextKey = "user_id"
-	ContextEmail  contextKey = "email"
-	ContextRole   contextKey = "role"
+	ContextUserID ContextKey = "user_id"
+	ContextRole   ContextKey = "role"
+	ContextEmail  ContextKey = "email"
 )
 
 func Authentication(next http.Handler) http.Handler {
@@ -35,16 +36,42 @@ func Authentication(next http.Handler) http.Handler {
 
 		userIdFloat, ok := claims["user_id"].(float64)
 		if !ok {
+			log.Println("user_id not found in claims ", claims)
 			WriteError(w, appErrors.ErrUnauthorized.New("Invalid user id"))
+			return
 		}
 
 		email := claims["email"]
 		role := claims["role"]
 
-		ctx := context.WithValue(r.Context(), ContextUserId, int(userIdFloat))
+		ctx := context.WithValue(r.Context(), ContextUserID, int(userIdFloat))
 		ctx = context.WithValue(ctx, ContextEmail, email)
 		ctx = context.WithValue(ctx, ContextRole, role)
 
+		// log.Printf("token claims: %v\n", claims)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func GetUserId(ctx context.Context) int {
+	id, ok := ctx.Value(ContextUserID).(int)
+	if !ok {
+		log.Println("contextUserID not found or wrong type in context")
+		return 0
+	}
+
+	return id
+}
+
+func GetUserRole(ctx context.Context) string {
+	if role, ok := ctx.Value(ContextRole).(string); ok {
+		return role
+	}
+
+	return ""
+}
+
+func IsAdmin(ctx context.Context) bool {
+	return GetUserRole(ctx) == "admin"
 }

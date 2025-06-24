@@ -4,8 +4,9 @@ import (
 	"context"
 	"crud_api/internal/domain/models"
 	appErrors "crud_api/internal/errors"
+	"crud_api/internal/middleware"
 	"crud_api/internal/repository"
-	contexthelper "crud_api/internal/utility/context_helper"
+	"fmt"
 
 	"github.com/joomcode/errorx"
 )
@@ -23,11 +24,6 @@ func NewComplaintUsecase(cr repository.ComplaintRepository, cm repository.Compla
 }
 
 func (cr *ComplaintUsecase) CreateComplaint(ctx context.Context, c *models.Complaints) error {
-	// authorization check
-	if contexthelper.IsAdmin(ctx) {
-		return appErrors.ErrUnauthorized.New("only users can create complaints")
-	}
-
 	if err := cr.complaintRepo.CreateComplaint(ctx, c); err != nil {
 		if errorx.IsOfType(err, appErrors.ErrUserDuplicate) {
 			return err
@@ -39,10 +35,6 @@ func (cr *ComplaintUsecase) CreateComplaint(ctx context.Context, c *models.Compl
 }
 
 func (cr *ComplaintUsecase) GetComplaintByRole(ctx context.Context, UserID int) ([]*models.Complaints, error) {
-	if contexthelper.IsAdmin(ctx) {
-		return nil, appErrors.ErrUnauthorized.New("this is for only users")
-	}
-
 	complaints, err := cr.complaintRepo.GetComplaintByRole(ctx, UserID)
 	if err != nil {
 		if errorx.IsOfType(err, appErrors.ErrUserNotFound) {
@@ -54,44 +46,55 @@ func (cr *ComplaintUsecase) GetComplaintByRole(ctx context.Context, UserID int) 
 }
 
 func (cr *ComplaintUsecase) UserMarkResolved(ctx context.Context, complaintID int) error {
-	if contexthelper.IsAdmin(ctx) {
-		return appErrors.ErrUnauthorized.New("this is only for users")
-	}
-
-	userID := contexthelper.GetUserId(ctx)
-	complaint, err := cr.complaintRepo.GetComplaintByID(&ctx, complaintID)
+	userID := middleware.GetUserId(ctx)
+	fmt.Printf("🔍 Logged-in user ID: %d\n", userID)
+	complaint, err := cr.complaintRepo.GetComplaintByID(ctx, complaintID)
 	if err != nil {
-		appErrors.ErrDbFailure.Wrap(err, "complaint not found")
+		fmt.Println("❌ Error fetching complaint:", err)
+		return appErrors.ErrDbFailure.Wrap(err, "complaint not found")
 	}
 
+	fmt.Printf("📦 Complaint fetched: %+v\n", complaint)
 	if complaint.UserID != userID {
+		fmt.Printf("❌ User ID %d does not own complaint %d (owned by %d)\n", userID, complaintID, complaint.UserID)
 		return appErrors.ErrDbFailure.New("user can only update their own complaint")
 	}
 
+	fmt.Printf("Updating complaint ID %d to Resolved\n", complaintID)
 	return cr.complaintRepo.UpdateComplaints(ctx, complaintID, "Resolved")
 }
 
 func (cr *ComplaintUsecase) GetAllComplaintByRole(ctx context.Context) ([]*models.Complaints, error) {
-	if !contexthelper.IsAdmin(ctx) {
-		return nil, appErrors.ErrUnauthorized.New("this operations is only for admins")
-	}
 	return cr.complaintRepo.GetAllComplaintByRole(ctx)
 }
 
 func (cr *ComplaintUsecase) AdminUpdateComplaints(ctx context.Context, complaintID int, status string) error {
-	if !contexthelper.IsAdmin(ctx) {
-		return appErrors.ErrUnauthorized.New("only admins have permits to do this operation")
+	validStatus := map[string]bool{
+		"Created":  true,
+		"Accepted": true,
+		"Resolved": true,
+		"Rejected": true,
 	}
-
-	if status != "Accepted" && status != "Resolved" && status != "Rejected" {
-		return appErrors.ErrInvalidPayload.New("status not valid")
+	if !validStatus[status] {
+		return appErrors.ErrInvalidPayload.New("Invalid complaint status")
 	}
 
 	return cr.complaintRepo.UpdateComplaints(ctx, complaintID, status)
 }
 
 // complaint_messages table
-func (cr *ComplaintUsecase) ReplayToMessage(ctx context.Context, msg *models.ComplaintMessages) error {
+func (cr *ComplaintUsecase) InsertCoplaintMessage(ctx context.Context, cm *models.ComplaintMessages) error {
+	if err := cr.messageRepo.InsertCoplaintMessage(ctx, cm); err != nil {
+		if errorx.IsOfType(err, appErrors.ErrUserDuplicate) {
+			return err
+		}
+		return appErrors.ErrDbFailure.Wrap(err, "usecase: unable to create user")
+	}
+
+	return nil
+}
+
+func (cr *ComplaintUsecase) ReplyToMessage(ctx context.Context, msg *models.ComplaintMessages) error {
 	if msg.ParentID != nil {
 		parentMsg, err := cr.messageRepo.GetMessageByID(ctx, *msg.ParentID)
 		if err != nil {
@@ -102,13 +105,13 @@ func (cr *ComplaintUsecase) ReplayToMessage(ctx context.Context, msg *models.Com
 		}
 	}
 
-	role := contexthelper.GetUserRole(ctx)
+	role := middleware.GetUserRole(ctx)
 
-	if role == "admin" && msg.FileUrl != nil {
+	if role == "admin" && msg.FileUrl != "" {
 		return appErrors.ErrUnauthorized.New("admins are not allowed to attach files")
 	}
 
-	msg.SenderID = contexthelper.GetUserId(ctx)
+	msg.SenderID = middleware.GetUserId(ctx)
 	return cr.messageRepo.AddMessage(ctx, msg)
 }
 
