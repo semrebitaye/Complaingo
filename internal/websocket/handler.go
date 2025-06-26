@@ -4,6 +4,7 @@ import (
 	"crud_api/internal/middleware"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -38,12 +39,37 @@ func HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserId(r.Context())
 	role := middleware.GetUserRole(r.Context())
 
-	Client := &Client{Conn: conn, UserID: userID, Role: role}
+	client := &Client{Conn: conn, UserID: userID, Role: role}
 
 	// add client to the global list
 	mutex.Lock()
-	clients[userID] = append(clients[userID], Client)
+	clients[userID] = append(clients[userID], client)
 	mutex.Unlock()
+
+	// listen for messages from client
+	type Message struct {
+		To      string `json:"to"`
+		From    string `json:"from"`
+		Message string `json:"message"`
+	}
+
+	for {
+		var msg Message
+		if err := conn.ReadJSON(msg); err != nil {
+			log.Println("websocket disconnected: ", err)
+			break
+		}
+
+		if msg.To == "admins" {
+			go SendToAdmins(msg)
+		} else {
+			toUserID, err := strconv.Atoi(msg.To)
+			if err == nil {
+				go SendToUser(toUserID, msg)
+			}
+		}
+
+	}
 
 	// listen for messages from client
 	for {
@@ -56,10 +82,10 @@ func HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	// remove disconnected client
 	mutex.Lock()
-	claintsList := clients[userID]
-	for i, c := range claintsList {
-		if c == Client {
-			claintsList = append(claintsList[:i], claintsList[i+1:]...)
+	cleintsList := clients[userID]
+	for i, c := range cleintsList {
+		if c == client {
+			cleintsList = append(cleintsList[:i], cleintsList[i+1:]...)
 			break
 		}
 	}
