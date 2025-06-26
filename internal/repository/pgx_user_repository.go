@@ -4,7 +4,6 @@ import (
 	"context"
 	"crud_api/internal/domain/models"
 	appErrors "crud_api/internal/errors"
-	"log"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -25,9 +24,9 @@ func (r *PgxUserRepo) CreateUser(ctx context.Context, u *models.User) error {
 	}
 
 	query := `
-INSERT INTO users (first_name, last_name, email, password, role_id)
-VALUES ($1, $2, $3, $4, (SELECT id FROM roles WHERE name = $5))
-RETURNING id`
+	INSERT INTO users (first_name, last_name, email, password, role_id)
+	VALUES ($1, $2, $3, $4, (SELECT id FROM roles WHERE name = $5))
+	RETURNING id`
 	err = r.db.QueryRow(ctx, query, u.FirstName, u.LastName, u.Email, u.Password, u.Role).Scan(&u.ID)
 
 	if err != nil {
@@ -62,7 +61,6 @@ func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
 		users = append(users, &u)
 	}
 
-	log.Printf("✅ Retrieved %d users\n", len(users))
 	return users, nil
 }
 

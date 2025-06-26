@@ -5,6 +5,7 @@ import (
 	"crud_api/internal/domain/models"
 	appErrors "crud_api/internal/errors"
 	"crud_api/internal/middleware"
+	"crud_api/internal/notifier"
 	"crud_api/internal/repository"
 	"fmt"
 
@@ -14,12 +15,14 @@ import (
 type ComplaintUsecase struct {
 	complaintRepo repository.ComplaintRepository
 	messageRepo   repository.ComplaintMessageRepository
+	notifier      notifier.Notifier
 }
 
-func NewComplaintUsecase(cr repository.ComplaintRepository, cm repository.ComplaintMessageRepository) *ComplaintUsecase {
+func NewComplaintUsecase(cr repository.ComplaintRepository, cm repository.ComplaintMessageRepository, n notifier.Notifier) *ComplaintUsecase {
 	return &ComplaintUsecase{
 		complaintRepo: cr,
 		messageRepo:   cm,
+		notifier:      n,
 	}
 }
 
@@ -50,13 +53,11 @@ func (cr *ComplaintUsecase) UserMarkResolved(ctx context.Context, complaintID in
 	fmt.Printf("🔍 Logged-in user ID: %d\n", userID)
 	complaint, err := cr.complaintRepo.GetComplaintByID(ctx, complaintID)
 	if err != nil {
-		fmt.Println("❌ Error fetching complaint:", err)
 		return appErrors.ErrDbFailure.Wrap(err, "complaint not found")
 	}
 
 	fmt.Printf("📦 Complaint fetched: %+v\n", complaint)
 	if complaint.UserID != userID {
-		fmt.Printf("❌ User ID %d does not own complaint %d (owned by %d)\n", userID, complaintID, complaint.UserID)
 		return appErrors.ErrDbFailure.New("user can only update their own complaint")
 	}
 
@@ -112,7 +113,19 @@ func (cr *ComplaintUsecase) ReplyToMessage(ctx context.Context, msg *models.Comp
 	}
 
 	msg.SenderID = middleware.GetUserId(ctx)
-	return cr.messageRepo.AddMessage(ctx, msg)
+	err := cr.messageRepo.AddMessage(ctx, msg)
+	if err != nil {
+		return appErrors.ErrDbFailure.Wrap(err, "failed to save reply")
+	}
+
+	if role == "user" {
+		cr.notifier.SendToAdmins(msg)
+	}
+	if role == "admin" {
+		cr.notifier.SendToUser(msg.SenderID, msg)
+	}
+
+	return nil
 }
 
 func (cr *ComplaintUsecase) GetMessagesByComplaint(ctx context.Context, complaintID int) ([]*models.ComplaintMessages, error) {

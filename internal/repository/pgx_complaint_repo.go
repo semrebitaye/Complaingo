@@ -177,3 +177,6 @@ func (r *PgxComplaintMessageRepo) GetMessageByID(ctx context.Context, messageID 
 
 	return &cm, nil
 }
+
+// notifier interface
+

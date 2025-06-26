@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket Tester</title>
+</head>
+<body>
+  <h2>WebSocket Tester</h2>
+  <label>JWT Token: </label><br>
+  <input type="text" id="token" placeholder="Paste your JWT token here" style="width: 400px;"><br><br>
+
+  <button onclick="connect()">Connect</button>
+  <button onclick="disconnect()">Disconnect</button><br><br>
+
+  <label>Send Message:</label><br>
+  <input type="text" id="message" placeholder='{"text":"hello"}' style="width: 400px;">
+  <button onclick="sendMessage()">Send</button>
+
+  <h4>Logs:</h4>
+  <pre id="log" style="background:#eee; padding:10px;"></pre>
+
+  <script>
+    let ws;
+
+    function log(msg) {
+      document.getElementById("log").textContent += msg + "\n";
+    }
+
+    function connect() {
+      const token = document.getElementById("token").value;
+      const socketUrl = "ws://localhost:8090/ws";
+
+      // Add auth token manually via headers - not allowed in browser WebSocket API
+      // So we use a workaround with query param (server must support it)
+      const wsUrl = socketUrl + `?token=${token}`;
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => log("✅ Connected!");
+      ws.onmessage = (e) => log("📩 Received: " + e.data);
+      ws.onerror = (e) => log("❌ Error: " + e);
+      ws.onclose = () => log("🔌 Disconnected");
+    }
+
+    function sendMessage() {
+      const msg = document.getElementById("message").value;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(msg);
+        log("➡️ Sent: " + msg);
+      } else {
+        log("⚠️ Not connected");
+      }
+    }
+
+    function disconnect() {
+      if (ws) ws.close();
+    }
+  </script>
+</body>
+</html>

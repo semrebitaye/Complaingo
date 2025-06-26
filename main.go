@@ -5,6 +5,7 @@ import (
 	"crud_api/config"
 	"crud_api/internal/handler"
 	"crud_api/internal/middleware"
+	"crud_api/internal/notifier"
 	"crud_api/internal/repository"
 	"crud_api/internal/usecase"
 	"fmt"
@@ -13,6 +14,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	websocketpkg "crud_api/internal/websocket"
 
 	"github.com/gorilla/mux"
 )
@@ -45,9 +48,12 @@ func main() {
 
 	complaintRepo := repository.NewPgxComplaintRepo(db)
 	complaintMessageRepo := repository.NewPgxComplaintMessageRepo(db)
-	complaintUsecase := usecase.NewComplaintUsecase(complaintRepo, complaintMessageRepo)
+	notifier := &notifier.RealTimeNotifier{}
+	complaintUsecase := usecase.NewComplaintUsecase(complaintRepo, complaintMessageRepo, notifier)
 
 	complaintHandler := handler.NewComplaintHandler(complaintUsecase)
+
+	authR.HandleFunc("/ws", websocketpkg.HandleWebsocket).Methods("GET")
 
 	authR.Handle("/complaints", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.CreateComplaint))).Methods("POST")
 	authR.Handle("/complaints/user/{id}", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.GetComplaintByRole))).Methods("GET")
