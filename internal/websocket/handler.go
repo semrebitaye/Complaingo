@@ -71,15 +71,6 @@ func HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	// listen for messages from client
-	for {
-		_, _, err := conn.ReadMessage()
-		if err != nil {
-			log.Println("websocket disconnected")
-			break
-		}
-	}
-
 	// remove disconnected client
 	mutex.Lock()
 	cleintsList := clients[userID]
