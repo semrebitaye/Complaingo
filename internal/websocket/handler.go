@@ -55,7 +55,7 @@ func HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		var msg Message
-		if err := conn.ReadJSON(msg); err != nil {
+		if err := conn.ReadJSON(&msg); err != nil {
 			log.Println("websocket disconnected: ", err)
 			break
 		}
