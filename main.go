@@ -53,7 +53,7 @@ func main() {
 
 	complaintHandler := handler.NewComplaintHandler(complaintUsecase)
 
-	authR.HandleFunc("/ws", websocketpkg.HandleWebsocket).Methods("GET")
+	authR.HandleFunc("/ws", websocketpkg.HandleWebsocket).Methods("GET")	
 
 	authR.Handle("/complaints", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.CreateComplaint))).Methods("POST")
 	authR.Handle("/complaints/user/{id}", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.GetComplaintByRole))).Methods("GET")
