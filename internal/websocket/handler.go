@@ -1,14 +1,22 @@
 package websocket
 
 import (
+	"crud_api/internal/domain/models"
 	"crud_api/internal/middleware"
+	"crud_api/internal/repository"
 	"log"
 	"net/http"
 	"strconv"
 	"sync"
 
+	appErrors "crud_api/internal/errors"
+
 	"github.com/gorilla/websocket"
 )
+
+type WebsocketHandler struct {
+	MessageRepo *repository.MessageRepository
+}
 
 // client struct -- represent one connected user
 type Client struct {
@@ -146,7 +154,13 @@ func SendToUser(userID int, message any) {
 	}
 }
 
-func HandleWebsocket(w http.ResponseWriter, r *http.Request) {
+func NewwebsocketHandler(messageRepo *repository.MessageRepository) *WebsocketHandler {
+	return &WebsocketHandler{
+		MessageRepo: messageRepo,
+	}
+}
+
+func (h *WebsocketHandler) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Error upgrading connection: ", err)
@@ -183,11 +197,35 @@ func HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		case "direct":
 			if msg.To == "admins" {
 				go SendToAdmins(msg)
-			} else {
-				toUserID, err := strconv.Atoi(msg.To)
-				if err == nil {
-					go SendToUser(toUserID, msg)
+
+				role := "admin"
+				err := h.MessageRepo.SaveMessage(r.Context(), &models.MessageEntity{
+					FromUserID: userID,
+					ToUserID:   nil,
+					ToRole:     &role,
+					Message:    msg.Message,
+				})
+				if err != nil {
+					middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "Failed to save"))
+					return
 				}
+
+			} else {
+				toID, err := strconv.Atoi(msg.To)
+				if err == nil {
+					go SendToUser(toID, msg)
+
+					err := h.MessageRepo.SaveMessage(r.Context(), &models.MessageEntity{
+						FromUserID: userID,
+						ToUserID:   &toID,
+						ToRole:     nil,
+						Message:    msg.Message,
+					})
+					if err != nil {
+						appErrors.ErrInvalidPayload.Wrap(err, "save error")
+					}
+				}
+				appErrors.ErrDbFailure.Wrap(err, "Invalid To field")
 			}
 		default:
 			log.Println("unknown message type: ", msg.Type)

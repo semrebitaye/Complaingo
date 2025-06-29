@@ -11,3 +11,13 @@ type ComplaintMessages struct {
 	FileUrl     string    `json:"file_url,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 }
+
+type MessageEntity struct {
+	ID         int     `json:"id"`
+	FromUserID int     `json:"from_user_id"`
+	ToUserID   *int    `json:"to_user_id"`
+	ToRole     *string `json:"to_role"`
+	Channel    *string `json:"channel"`
+	Message    string  `json:"message"`
+	CeatedAt   string  `json:"created_at"`
+}
