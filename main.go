@@ -4,6 +4,7 @@ import (
 	"context"
 	"crud_api/config"
 	"crud_api/internal/handler"
+	"crud_api/internal/kafka"
 	"crud_api/internal/middleware"
 	"crud_api/internal/notifier"
 	"crud_api/internal/repository"
@@ -53,7 +54,11 @@ func main() {
 	complaintHandler := handler.NewComplaintHandler(complaintUsecase)
 
 	messageRepo := repository.NewMessageRepository(db)
-	websocketHandler := websocket.NewwebsocketHandler(messageRepo)
+	kafkaConsumer := kafka.NewKafkaConsumer([]string{"localhost:9092"}, "chat-messages", "chat-group")
+	kafkaCtx, kafkaStop := context.WithCancel(context.Background())
+	kafkaConsumer.StartConsuming(kafkaCtx)
+	kafkaProducer := kafka.NewKafkaProducer([]string{"localhost:9092"}, "chat-messages")
+	websocketHandler := websocket.NewwebsocketHandler(messageRepo, kafkaProducer)
 
 	authR.HandleFunc("/ws", websocketHandler.HandleWebsocket).Methods("GET")
 
@@ -84,6 +89,8 @@ func main() {
 	defer stop()
 	<-shoutdown.Done()
 	fmt.Println("Souting down server...")
+
+	kafkaStop() //gracefully stop kafka consumer
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
