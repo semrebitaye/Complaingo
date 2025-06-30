@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"crud_api/internal/domain/models"
+	"crud_api/internal/kafka"
 	"crud_api/internal/middleware"
 	"crud_api/internal/repository"
 	"log"
@@ -16,6 +17,7 @@ import (
 
 type WebsocketHandler struct {
 	MessageRepo *repository.MessageRepository
+	kafProd     *kafka.KafkaProducer
 }
 
 // client struct -- represent one connected user
@@ -154,9 +156,10 @@ func SendToUser(userID int, message any) {
 	}
 }
 
-func NewwebsocketHandler(messageRepo *repository.MessageRepository) *WebsocketHandler {
+func NewwebsocketHandler(messageRepo *repository.MessageRepository, kafkaProd *kafka.KafkaProducer) *WebsocketHandler {
 	return &WebsocketHandler{
 		MessageRepo: messageRepo,
+		kafProd:     kafkaProd,
 	}
 }
 
@@ -198,6 +201,8 @@ func (h *WebsocketHandler) HandleWebsocket(w http.ResponseWriter, r *http.Reques
 			if msg.To == "admins" {
 				go SendToAdmins(msg)
 
+				h.kafProd.SendMessage(msg.Message)
+
 				role := "admin"
 				err := h.MessageRepo.SaveMessage(r.Context(), &models.MessageEntity{
 					FromUserID: userID,
@@ -214,6 +219,8 @@ func (h *WebsocketHandler) HandleWebsocket(w http.ResponseWriter, r *http.Reques
 				toID, err := strconv.Atoi(msg.To)
 				if err == nil {
 					go SendToUser(toID, msg)
+
+					h.kafProd.SendMessage(msg.Message)
 
 					err := h.MessageRepo.SaveMessage(r.Context(), &models.MessageEntity{
 						FromUserID: userID,
