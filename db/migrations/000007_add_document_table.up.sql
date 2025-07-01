@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS documents(
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    file_name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
