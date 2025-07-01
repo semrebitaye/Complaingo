@@ -72,6 +72,15 @@ func main() {
 	authR.Handle("/complaints/{id}/messages", middleware.RBAC("admin", "user")(http.HandlerFunc(complaintHandler.GetMessagesByComplaint))).Methods("GET")
 	authR.Handle("/complaints/{id}/reply", middleware.RBAC("admin", "user")(http.HandlerFunc(complaintHandler.ReplyToMessage))).Methods("POST")
 
+	docRepo := repository.NewDocumentRepository(db)
+	docUC := usecase.NewDocumentUsecase(docRepo)
+	docHandle := handler.NewDocumentHandler(docUC)
+
+	authR.Handle("/documents", middleware.RBAC("admin", "user")(http.HandlerFunc(docHandle.Uplod))).Methods("POST")
+	authR.Handle("/documents/{id}", middleware.RBAC("admin", "user")(http.HandlerFunc(docHandle.GetDocumentByID))).Methods("GET")
+	authR.Handle("/documents/user/{id}", middleware.RBAC("admin", "user")(http.HandlerFunc(docHandle.GetDocumentByUser))).Methods("GET")
+	authR.Handle("/documents/{id}", middleware.RBAC("admin", "user")(http.HandlerFunc(docHandle.DeleteDocument))).Methods("DELETE")
+
 	// create server
 	srv := http.Server{
 		Addr:    ":" + cfg.ServerPort,
