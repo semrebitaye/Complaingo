@@ -7,6 +7,7 @@ import (
 	"crud_api/internal/kafka"
 	"crud_api/internal/middleware"
 	"crud_api/internal/notifier"
+	"crud_api/internal/rabbitmq"
 	"crud_api/internal/redis"
 	"crud_api/internal/repository"
 	"crud_api/internal/usecase"
@@ -29,6 +30,11 @@ func main() {
 	defer db.Close(context.Background())
 
 	redis.ConnectRedis()
+
+	rabbit := rabbitmq.NewProducer("amqp://guest:guest@localhost:5672/", "notifications")
+	consumer := rabbitmq.NewConsumer("amqp://guest:guest@localhost:5672/", "notifications")
+	rabbit.SendMessage("Hello from go rabbit")
+	consumer.StartConsuming()
 
 	repo := repository.NewPgxUserRepo(db)
 	usercase := usecase.NewUserUsecase(repo)
