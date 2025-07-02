@@ -20,6 +20,11 @@ func NewUserUsecase(r repository.UserRepository) *UserUsecase {
 	return &UserUsecase{repo: r}
 }
 
+type LoginResponse struct {
+	Token string
+	User  *models.User
+}
+
 func (uc *UserUsecase) RegisterUser(ctx context.Context, u *models.User) error {
 	// validate user input
 	if err := validation.ValidateUser(u); err != nil {
@@ -98,7 +103,7 @@ func (uc *UserUsecase) DeleteUser(ctx context.Context, id int) error {
 	return nil
 }
 
-func (uc *UserUsecase) Login(ctx context.Context, email string, password string) (string, error) {
+func (uc *UserUsecase) Login(ctx context.Context, email string, password string) (*LoginResponse, error) {
 	// validate email and password input
 	input := validation.LoginInput{
 		Email:    email,
@@ -106,26 +111,29 @@ func (uc *UserUsecase) Login(ctx context.Context, email string, password string)
 	}
 
 	if err := input.ValidateLoginInput(); err != nil {
-		return "", appErrors.ErrInvalidPayload.Wrap(err, "usecase: Invalid login input")
+		return nil, appErrors.ErrInvalidPayload.Wrap(err, "usecase: Invalid login input")
 	}
 
 	// fetch user by email
 	user, err := uc.repo.GetByEmail(ctx, email)
 	if err != nil {
-		return "", appErrors.ErrUserNotFound.Wrap(err, "usecase: login failed, email not found")
+		return nil, appErrors.ErrUserNotFound.Wrap(err, "usecase: login failed, email not found")
 	}
 
 	// compare hashed password with the input password
 	err = utility.ComparePassword(user.Password, password)
 	if err != nil {
-		return "", appErrors.ErrUnauthorized.New("Invalid credential")
+		return nil, appErrors.ErrUnauthorized.New("Invalid credential")
 	}
 
 	// generate jwt token
 	token, err := utility.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
-		return "", appErrors.ErrDbFailure.Wrap(err, "failed to generate jwt")
+		return nil, appErrors.ErrDbFailure.Wrap(err, "failed to generate jwt")
 	}
 
-	return token, nil
+	return &LoginResponse{
+		Token: token,
+		User:  user,
+	}, nil
 }

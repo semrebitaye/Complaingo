@@ -3,12 +3,15 @@ package handler
 import (
 	"crud_api/internal/domain/models"
 	"crud_api/internal/middleware"
+	"crud_api/internal/redis"
 	"crud_api/internal/usecase"
 	"crud_api/internal/validation"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	appErrors "crud_api/internal/errors"
 
@@ -58,11 +61,30 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalid id"))
 		return
 	}
+
+	// check redis catch first
+	chachKey := fmt.Sprintf("user:%d", id)
+	catchUserJson, err := redis.RDB.Get(redis.Ctx, chachKey).Result()
+
+	if err == nil {
+		// found on catch return it
+		var cathUser models.User
+		if err := json.Unmarshal([]byte(catchUserJson), &cathUser); err == nil {
+			middleware.WriteSuccess(w, cathUser, "user fetched from catch")
+			return
+		}
+	}
+
+	// if not found in cache, fetch from DB
 	user, err := h.usecase.GetUserByID(r.Context(), id)
 	if err != nil {
 		middleware.WriteError(w, err)
 		return
 	}
+
+	// cache the result for future use
+	userJson, _ := json.Marshal(user)
+	redis.RDB.Set(redis.Ctx, chachKey, userJson, time.Minute*10)
 
 	middleware.WriteSuccess(w, user, "user successfully get by pk id")
 }
@@ -114,11 +136,15 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.usecase.Login(r.Context(), body.Email, body.Password)
+	resp, err := h.usecase.Login(r.Context(), body.Email, body.Password)
 	if err != nil {
 		middleware.WriteError(w, err)
 		return
 	}
 
-	middleware.WriteSuccess(w, token, "User login successfully")
+	// cache the user login in redis
+	userJson, _ := json.Marshal(resp.User)
+	redis.RDB.Set(redis.Ctx, fmt.Sprintf("User:%d", resp.User.ID), userJson, time.Minute*10)
+
+	middleware.WriteSuccess(w, resp.Token, "User login successfully")
 }
