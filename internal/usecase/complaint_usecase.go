@@ -6,8 +6,11 @@ import (
 	appErrors "crud_api/internal/errors"
 	"crud_api/internal/middleware"
 	"crud_api/internal/notifier"
+	"crud_api/internal/rabbitmq"
 	"crud_api/internal/repository"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/joomcode/errorx"
 )
@@ -33,6 +36,19 @@ func (cr *ComplaintUsecase) CreateComplaint(ctx context.Context, c *models.Compl
 		}
 		return appErrors.ErrDbFailure.Wrap(err, "usecase: unable to create user")
 	}
+
+	// publish to rabbitmq
+	message := models.NotificationMessage{
+		Type:      "complaint_created",
+		UserID:    c.UserID,
+		Complient: c.Subject,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}
+
+	// serialize and send
+	messageJson, _ := json.Marshal(message)
+	prod := rabbitmq.NewProducer("amqp://guest:guest@localhost:5672/", "notifications")
+	prod.SendMessage(string(messageJson))
 
 	return nil
 }
