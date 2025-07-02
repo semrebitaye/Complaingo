@@ -7,6 +7,7 @@ import (
 	"crud_api/internal/kafka"
 	"crud_api/internal/middleware"
 	"crud_api/internal/notifier"
+	"crud_api/internal/redis"
 	"crud_api/internal/repository"
 	"crud_api/internal/usecase"
 	"crud_api/internal/websocket"
@@ -26,6 +27,8 @@ func main() {
 	// Connect to DB
 	db := config.ConnectToDB()
 	defer db.Close(context.Background())
+
+	redis.ConnectRedis()
 
 	repo := repository.NewPgxUserRepo(db)
 	usercase := usecase.NewUserUsecase(repo)

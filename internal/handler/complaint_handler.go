@@ -3,11 +3,14 @@ package handler
 import (
 	"crud_api/internal/domain/models"
 	"crud_api/internal/middleware"
+	"crud_api/internal/redis"
 	"crud_api/internal/usecase"
 	"crud_api/internal/utility"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	appErrors "crud_api/internal/errors"
 
@@ -47,11 +50,29 @@ func (uc *ComplaintHandler) GetComplaintByRole(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// check redis cache
+	cachKey := fmt.Sprintf("complaints:%d", user_id)
+	cachedComplaint, err := redis.RDB.Get(redis.Ctx, cachKey).Result()
+	if err == nil {
+		// found on cache
+		var complaints []models.Complaints
+		if err := json.Unmarshal([]byte(cachedComplaint), &complaints); err == nil {
+			middleware.WriteSuccess(w, complaints, "Complient from cache")
+			return
+		}
+
+	}
+
+	// not found in cache fetch from DB
 	complaint, err := uc.usecase.GetComplaintByRole(r.Context(), user_id)
 	if err != nil {
 		middleware.WriteError(w, err)
 		return
 	}
+
+	// cache the database result for future use
+	complientJson, _ := json.Marshal(complaint)
+	redis.RDB.Set(redis.Ctx, cachKey, complientJson, time.Minute*10)
 
 	middleware.WriteSuccess(w, complaint, "complaint get successfully by pk user_id")
 }
@@ -147,11 +168,27 @@ func (uc *ComplaintHandler) GetMessagesByComplaint(w http.ResponseWriter, r *htt
 		return
 	}
 
+	// check redis cache
+	cacheKey := fmt.Sprintf("Message:%d", complaintID)
+	cachedMessage, err := redis.RDB.Get(redis.Ctx, cacheKey).Result()
+	if err == nil {
+		var message []models.ComplaintMessages
+		if err := json.Unmarshal([]byte(cachedMessage), &message); err == nil {
+			middleware.WriteSuccess(w, message, "Feched from cache")
+			return
+		}
+	}
+
+	// not found in cache -> fetch from DB
 	message, err := uc.usecase.GetMessagesByComplaint(r.Context(), complaintID)
 	if err != nil {
 		middleware.WriteError(w, err)
 		return
 	}
+
+	// save in cache for future
+	messageJson, _ := json.Marshal(message)
+	redis.RDB.Set(redis.Ctx, cacheKey, messageJson, time.Minute*10)
 
 	middleware.WriteSuccess(w, message, "Message successfully fetched by complaint id")
 }
