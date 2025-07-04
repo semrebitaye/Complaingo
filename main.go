@@ -50,6 +50,8 @@ func main() {
 	authR := r.PathPrefix("/").Subrouter()
 	authR.Use(middleware.Authentication)
 
+	authR.Handle("/ask-ai", middleware.RBAC("admin", "user")(http.HandlerFunc(handler.AIChatHandler))).Methods("POST")
+
 	authR.Handle("/users", middleware.RBAC("admin", "user")(http.HandlerFunc(userHandler.GetAllUser))).Methods("GET")
 	authR.Handle("/user/{id}", middleware.RBAC("admin", "user")(http.HandlerFunc(userHandler.GetUserByID))).Methods("GET")
 	authR.Handle("/users/{id}", middleware.RBAC("admin")(http.HandlerFunc(userHandler.UpdateUser))).Methods("PATCH")
