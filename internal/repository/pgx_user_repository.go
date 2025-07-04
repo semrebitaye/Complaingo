@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"crud_api/internal/domain/models"
-	appErrors "crud_api/internal/errors"
+	"Complaingo/internal/domain/models"
+	appErrors "Complaingo/internal/errors"
 
 	"github.com/jackc/pgx/v5"
 )

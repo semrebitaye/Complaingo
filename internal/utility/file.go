@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 )
 
 func SaveUploadFile(file multipart.File, handler multipart.FileHeader) (string, error) {

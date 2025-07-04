@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 )
 
 func RBAC(allowedRoles ...string) func(http.Handler) http.Handler {

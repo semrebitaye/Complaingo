@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 )
 
 func RecoverMiddleware(next http.Handler) http.Handler {

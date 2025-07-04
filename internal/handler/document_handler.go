@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"crud_api/internal/domain/models"
-	"crud_api/internal/middleware"
-	"crud_api/internal/usecase"
+	"Complaingo/internal/domain/models"
+	"Complaingo/internal/middleware"
+	"Complaingo/internal/usecase"
 	"io"
 	"net/http"
 	"os"

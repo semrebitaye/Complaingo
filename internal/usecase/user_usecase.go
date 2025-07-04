@@ -2,14 +2,14 @@ package usecase
 
 import (
 	"context"
-	"crud_api/internal/domain/models"
-	"crud_api/internal/repository"
-	"crud_api/internal/utility"
-	"crud_api/internal/validation"
+	"Complaingo/internal/domain/models"
+	"Complaingo/internal/repository"
+	"Complaingo/internal/utility"
+	"Complaingo/internal/validation"
 
 	"github.com/joomcode/errorx"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 )
 
 type UserUsecase struct {

@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 
 	"github.com/joho/godotenv"
 )

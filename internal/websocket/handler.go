@@ -1,16 +1,16 @@
 package websocket
 
 import (
-	"crud_api/internal/domain/models"
-	"crud_api/internal/kafka"
-	"crud_api/internal/middleware"
-	"crud_api/internal/repository"
+	"Complaingo/internal/domain/models"
+	"Complaingo/internal/kafka"
+	"Complaingo/internal/middleware"
+	"Complaingo/internal/repository"
 	"log"
 	"net/http"
 	"strconv"
 	"sync"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 
 	"github.com/gorilla/websocket"
 )

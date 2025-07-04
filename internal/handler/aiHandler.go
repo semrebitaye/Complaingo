@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"crud_api/internal/middleware"
-	"crud_api/internal/openai"
+	"Complaingo/internal/middleware"
+	"Complaingo/internal/openai"
 	"encoding/json"
 	"net/http"
 )

@@ -1,10 +1,10 @@
 package utility
 
 import (
-	"crud_api/config"
+	"Complaingo/config"
 	"time"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"

@@ -11,11 +11,11 @@ COPY . .
 RUN go get -d -v ./...
 
 # build the go app
-RUN go build -o crud_api .
+RUN go build -o Complaingo .
 
 # expose with port number
 EXPOSE 8090
 
 # run the excutable
-CMD [ "./crud_api" ]
+CMD [ "./Complaingo" ]
 

@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
-	"crud_api/internal/domain/models"
-	"crud_api/internal/repository"
+	"Complaingo/internal/domain/models"
+	"Complaingo/internal/repository"
 )
 
 type DocumentUsecase struct {

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"crud_api/internal/domain/models"
+	"Complaingo/internal/domain/models"
 )
 
 type UserRepository interface {

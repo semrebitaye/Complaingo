@@ -2,12 +2,12 @@ package usecase
 
 import (
 	"context"
-	"crud_api/internal/domain/models"
-	appErrors "crud_api/internal/errors"
-	"crud_api/internal/middleware"
-	"crud_api/internal/notifier"
-	"crud_api/internal/rabbitmq"
-	"crud_api/internal/repository"
+	"Complaingo/internal/domain/models"
+	appErrors "Complaingo/internal/errors"
+	"Complaingo/internal/middleware"
+	"Complaingo/internal/notifier"
+	"Complaingo/internal/rabbitmq"
+	"Complaingo/internal/repository"
 	"encoding/json"
 	"fmt"
 	"time"

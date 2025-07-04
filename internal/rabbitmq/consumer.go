@@ -1,8 +1,8 @@
 package rabbitmq
 
 import (
-	"crud_api/internal/domain/models"
-	"crud_api/internal/websocket"
+	"Complaingo/internal/domain/models"
+	"Complaingo/internal/websocket"
 	"encoding/json"
 	"log"
 

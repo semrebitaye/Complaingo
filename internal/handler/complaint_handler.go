@@ -1,18 +1,18 @@
 package handler
 
 import (
-	"crud_api/internal/domain/models"
-	"crud_api/internal/middleware"
-	"crud_api/internal/redis"
-	"crud_api/internal/usecase"
-	"crud_api/internal/utility"
+	"Complaingo/internal/domain/models"
+	"Complaingo/internal/middleware"
+	"Complaingo/internal/redis"
+	"Complaingo/internal/usecase"
+	"Complaingo/internal/utility"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 
 	"github.com/gorilla/mux"
 )

@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"crud_api/internal/domain/models"
-	"crud_api/internal/middleware"
-	"crud_api/internal/redis"
-	"crud_api/internal/usecase"
-	"crud_api/internal/validation"
+	"Complaingo/internal/domain/models"
+	"Complaingo/internal/middleware"
+	"Complaingo/internal/redis"
+	"Complaingo/internal/usecase"
+	"Complaingo/internal/validation"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 
 	"github.com/gorilla/mux"
 )

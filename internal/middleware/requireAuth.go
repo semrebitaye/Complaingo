@@ -2,12 +2,12 @@ package middleware
 
 import (
 	"context"
-	"crud_api/internal/utility"
+	"Complaingo/internal/utility"
 	"log"
 	"net/http"
 	"strings"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 )
 
 type ContextKey string

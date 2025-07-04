@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
-	"crud_api/internal/domain/models"
+	"Complaingo/internal/domain/models"
 	"time"
 
-	appErrors "crud_api/internal/errors"
+	appErrors "Complaingo/internal/errors"
 
 	"github.com/jackc/pgx/v5"
 )

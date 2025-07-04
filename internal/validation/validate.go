@@ -1,7 +1,7 @@
 package validation
 
 import (
-	"crud_api/internal/domain/models"
+	"Complaingo/internal/domain/models"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"

@@ -6,7 +6,7 @@ import (
 
 	"github.com/joomcode/errorx"
 
-	errs "crud_api/internal/errors"
+	errs "Complaingo/internal/errors"
 )
 
 type SuccessResponse struct {
