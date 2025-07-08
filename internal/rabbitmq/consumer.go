@@ -10,9 +10,9 @@ import (
 )
 
 type Consumer struct {
-	conn   *amqp.Connection
-	cahhel *amqp.Channel
-	queue  amqp.Queue
+	conn    *amqp.Connection
+	channel *amqp.Channel
+	queue   amqp.Queue
 }
 
 func NewConsumer(amqpUrl, queueName string) *Consumer {
@@ -29,18 +29,34 @@ func NewConsumer(amqpUrl, queueName string) *Consumer {
 	}
 
 	// create queue
-	q, err := ch.QueueDeclare(queueName, true, false, false, false, nil)
+	q, err := ch.QueueDeclare(
+		queueName, //queue name
+		true,      //durable
+		false,     //autodelete
+		false,     //exclusive
+		false,     //noWait
+		nil,       //arguments
+	)
 	if err != nil {
 		log.Fatalf("Failed to declare queue: %v", err)
 	}
 
 	log.Println("Consumer connected to rabbitmq and queue declared")
 
-	return &Consumer{conn: conn, cahhel: ch, queue: q}
+	return &Consumer{conn: conn, channel: ch, queue: q}
 }
 
 func (c *Consumer) StartConsuming() {
-	msgs, err := c.cahhel.Consume(c.queue.Name, "", true, false, false, false, nil)
+	// consume rabbitmq queue
+	msgs, err := c.channel.Consume(
+		c.queue.Name, //queue name
+		"",           //consumer tag
+		true,         //auto ack
+		false,        //exclusive
+		false,        //no-local
+		false,        //no-wait
+		nil,          //args
+	)
 	if err != nil {
 		log.Fatalf("Failed to register consumer: %v", err)
 	}
