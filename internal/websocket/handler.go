@@ -103,10 +103,16 @@ func (h *ChannelHub) Publish(channel string, message any) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
+	success := true
 	for _, client := range h.subscribers[channel] {
 		if err := client.Conn.WriteJSON(message); err != nil {
 			log.Println("Error sending to channel: ", err)
+			success = false
 		}
+	}
+
+	if success {
+		log.Println("Message successfully sent to all subscribers.")
 	}
 }
 

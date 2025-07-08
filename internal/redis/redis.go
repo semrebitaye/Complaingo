@@ -15,12 +15,15 @@ var (
 // func connect to redis server
 func ConnectRedis() {
 	RDB = redis.NewClient(&redis.Options{ //create new redis client and assign to it to redis
-		Addr: "localhost:6379", // default redis port
+		Addr:     "localhost:6379", // default redis port
+		Password: "",               //no password set
+		DB:       0,                //default database
 	})
 
-	_, err := RDB.Ping(Ctx).Result()
+	//ping the redis server to check connection
+	status, err := RDB.Ping(Ctx).Result()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to connect to redis: %v", err))
 	}
-	fmt.Println("Connected to redis")
+	fmt.Printf("Connected to redis! status: %s\n", status)
 }
