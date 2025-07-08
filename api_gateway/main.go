@@ -9,10 +9,12 @@ import (
 )
 
 func main() {
+	gateway.InitRedisRateLimit()
+
 	r := mux.NewRouter()
 
 	// global rate limiting
-	r.Use(gateway.RateLimitMiddleware)
+	r.Use(gateway.RateLimiterMiddleware)
 
 	// public routes no token required
 	r.PathPrefix("/register").HandlerFunc(gateway.ForwardTo("http://localhost:8090")).Methods("POST")
