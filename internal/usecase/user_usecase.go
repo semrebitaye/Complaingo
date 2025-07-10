@@ -1,11 +1,11 @@
 package usecase
 
 import (
-	"context"
 	"Complaingo/internal/domain/models"
 	"Complaingo/internal/repository"
 	"Complaingo/internal/utility"
 	"Complaingo/internal/validation"
+	"context"
 
 	"github.com/joomcode/errorx"
 
@@ -56,8 +56,8 @@ func (uc *UserUsecase) RegisterUser(ctx context.Context, u *models.User) error {
 	return nil
 }
 
-func (uc *UserUsecase) GetAllUser(ctx context.Context) ([]*models.User, error) {
-	users, err := uc.repo.GetAllUser(ctx)
+func (uc *UserUsecase) GetAllUser(ctx context.Context, param utility.FilterParam) ([]*models.User, error) {
+	users, err := uc.repo.GetAllUser(ctx, param)
 	if err != nil {
 		return nil, appErrors.ErrDbFailure.Wrap(err, "usecase: failed to get all user on usecase")
 	}

@@ -5,6 +5,7 @@ import (
 	"Complaingo/internal/middleware"
 	"Complaingo/internal/redis"
 	"Complaingo/internal/usecase"
+	"Complaingo/internal/utility"
 	"Complaingo/internal/validation"
 	"encoding/json"
 	"fmt"
@@ -42,9 +43,23 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) GetAllUser(w http.ResponseWriter, r *http.Request) {
-	log.Println("🧠 User role from context:", middleware.GetUserRole(r.Context()))
+	query := r.URL.Query()
 
-	users, err := h.usecase.GetAllUser(r.Context())
+	pagniParam := utility.PaginationParam{
+		Page:    query.Get("page"),
+		PerPage: query.Get("per_page"),
+		Sort:    query.Get("sort"),
+		Search:  query.Get("search"),
+		Filter:  query.Get("filter"),
+	}
+
+	filterParam, err := utility.ExtractPagination(pagniParam)
+	if err != nil {
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "Failed to parse query params"))
+		return
+	}
+
+	users, err := h.usecase.GetAllUser(r.Context(), filterParam)
 	if err != nil {
 		log.Panicln("users not found ", users)
 		middleware.WriteError(w, err)
