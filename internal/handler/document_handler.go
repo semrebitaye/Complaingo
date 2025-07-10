@@ -4,11 +4,14 @@ import (
 	"Complaingo/internal/domain/models"
 	"Complaingo/internal/middleware"
 	"Complaingo/internal/usecase"
+	"Complaingo/internal/utility"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	appErrors "Complaingo/internal/errors"
 
 	"github.com/gorilla/mux"
 )
@@ -83,7 +86,23 @@ func (h *DocumentHandler) GetDocumentByUser(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	doc, err := h.usecase.GetDocumentByUser(r.Context(), userID)
+	query := r.URL.Query()
+
+	paginParam := utility.PaginationParam{
+		Page:    query.Get("page"),
+		PerPage: query.Get("per_page"),
+		Sort:    query.Get("sort"),
+		Search:  query.Get("search"),
+		Filter:  query.Get("filter"),
+	}
+
+	filterParam, err := utility.ExtractPagination(paginParam)
+	if err != nil {
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "Failed to prase query"))
+		return
+	}
+
+	doc, err := h.usecase.GetDocumentByUser(r.Context(), userID, filterParam)
 	if err != nil {
 		middleware.WriteError(w, err)
 		return

@@ -1,9 +1,11 @@
 package repository
 
 import (
-	"context"
 	"Complaingo/internal/domain/models"
 	appErrors "Complaingo/internal/errors"
+	"Complaingo/internal/utility"
+	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -38,14 +40,50 @@ func (r *PgxUserRepo) CreateUser(ctx context.Context, u *models.User) error {
 	return nil
 }
 
-func (r *PgxUserRepo) GetAllUser(ctx context.Context) ([]*models.User, error) {
+func (r *PgxUserRepo) GetAllUser(ctx context.Context, param utility.FilterParam) ([]*models.User, error) {
 	query := `
 	SELECT u.id, u.first_name, u.last_name, u.email, u.password, r.name as role, u.role_id
 	FROM users u
 	LEFT JOIN roles r ON u.role_id = r.id
+	WHERE 1=1
 	`
 
-	rows, err := r.db.Query(ctx, query)
+	args := []interface{}{}
+	argIdx := 1
+
+	// add filters
+	for _, f := range param.Filters {
+		query += fmt.Sprintf(" AND %s %s $%d", f.ColumnName, f.Operator, argIdx)
+		args = append(args, f.Value)
+		argIdx++
+	}
+
+	// add search across name and email
+	if param.Search != "" {
+		query += fmt.Sprintf(" AND (u.first_name ILIKE $%d OR u.last_name ILIKE $%d OR u.email ILIKE $%d)", argIdx, argIdx+1, argIdx+2)
+		searchVal := "%" + param.Search + "%"
+		args = append(args, searchVal, searchVal, searchVal)
+		argIdx += 3
+	}
+
+	// add sort
+	sortCol := param.Sort.ColumnName
+	sortOrder := param.Sort.Value
+
+	if sortCol == "" {
+		sortCol = "u.id"
+	}
+	if sortOrder == "" {
+		sortOrder = "asc"
+	}
+	query += fmt.Sprintf(" ORDER BY %s %s", sortCol, sortOrder)
+
+	// add pagination
+	offset := (param.Page - 1) * param.PerPage
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+	args = append(args, param.PerPage, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, appErrors.ErrDbFailure.Wrap(err, "query failed")
 	}

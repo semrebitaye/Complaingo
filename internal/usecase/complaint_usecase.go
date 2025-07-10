@@ -1,13 +1,14 @@
 package usecase
 
 import (
-	"context"
 	"Complaingo/internal/domain/models"
 	appErrors "Complaingo/internal/errors"
 	"Complaingo/internal/middleware"
 	"Complaingo/internal/notifier"
 	"Complaingo/internal/rabbitmq"
 	"Complaingo/internal/repository"
+	"Complaingo/internal/utility"
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -53,8 +54,8 @@ func (cr *ComplaintUsecase) CreateComplaint(ctx context.Context, c *models.Compl
 	return nil
 }
 
-func (cr *ComplaintUsecase) GetComplaintByRole(ctx context.Context, UserID int) ([]*models.Complaints, error) {
-	complaints, err := cr.complaintRepo.GetComplaintByRole(ctx, UserID)
+func (cr *ComplaintUsecase) GetComplaintByRole(ctx context.Context, UserID int, param utility.FilterParam) ([]*models.Complaints, error) {
+	complaints, err := cr.complaintRepo.GetComplaintByRole(ctx, UserID, param)
 	if err != nil {
 		if errorx.IsOfType(err, appErrors.ErrUserNotFound) {
 			return nil, appErrors.ErrUnauthorized.Wrap(err, "usecase: complaint not found")
@@ -81,8 +82,8 @@ func (cr *ComplaintUsecase) UserMarkResolved(ctx context.Context, complaintID in
 	return cr.complaintRepo.UpdateComplaints(ctx, complaintID, "Resolved")
 }
 
-func (cr *ComplaintUsecase) GetAllComplaintByRole(ctx context.Context) ([]*models.Complaints, error) {
-	return cr.complaintRepo.GetAllComplaintByRole(ctx)
+func (cr *ComplaintUsecase) GetAllComplaintByRole(ctx context.Context, param utility.FilterParam) ([]*models.Complaints, error) {
+	return cr.complaintRepo.GetAllComplaintByRole(ctx, param)
 }
 
 func (cr *ComplaintUsecase) AdminUpdateComplaints(ctx context.Context, complaintID int, status string) error {

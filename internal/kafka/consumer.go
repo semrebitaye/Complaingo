@@ -6,13 +6,11 @@ import (
 
 	"github.com/IBM/sarama"
 )
-
 type KafkaConsumer struct {
 	Brokers []string
 	Topic   string
 	GroupID string
 }
-
 func NewKafkaConsumer(brokers []string, topic, gropID string) *KafkaConsumer {
 	return &KafkaConsumer{
 		Brokers: brokers,
@@ -20,19 +18,15 @@ func NewKafkaConsumer(brokers []string, topic, gropID string) *KafkaConsumer {
 		GroupID: gropID,
 	}
 }
-
 func (kc *KafkaConsumer) StartConsuming(ctx context.Context) {
 	config := sarama.NewConfig()
 	config.Version = sarama.V2_5_0_0
 	config.Consumer.Return.Errors = true
-
 	consumerGroup, err := sarama.NewConsumerGroup(kc.Brokers, kc.GroupID, config)
 	if err != nil {
 		log.Fatal("Failed to create consumer group:", err)
 	}
-
 	handler := consumerGroupHandler{}
-
 	go func() {
 		for {
 			if err := consumerGroup.Consume(ctx, []string{kc.Topic}, handler); err != nil {
@@ -44,9 +38,7 @@ func (kc *KafkaConsumer) StartConsuming(ctx context.Context) {
 		}
 	}()
 }
-
 type consumerGroupHandler struct{}
-
 func (consumerGroupHandler) Setup(_ sarama.ConsumerGroupSession) error {
 	return nil
 }

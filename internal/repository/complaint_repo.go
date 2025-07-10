@@ -1,16 +1,17 @@
 package repository
 
 import (
-	"context"
 	"Complaingo/internal/domain/models"
+	"Complaingo/internal/utility"
+	"context"
 )
 
 type ComplaintRepository interface {
-	CreateComplaint(ctx context.Context, c *models.Complaints) error                  //user only
-	GetComplaintByRole(ctx context.Context, UserID int) ([]*models.Complaints, error) // user only
+	CreateComplaint(ctx context.Context, c *models.Complaints) error                                             //user only
+	GetComplaintByRole(ctx context.Context, UserID int, param utility.FilterParam) ([]*models.Complaints, error) // user only
 	GetComplaintByID(ctx context.Context, complaintID int) (*models.Complaints, error)
 	UpdateComplaints(ctx context.Context, complaintID int, status string) error
-	GetAllComplaintByRole(ctx context.Context) ([]*models.Complaints, error) //admin olny
+	GetAllComplaintByRole(ctx context.Context, param utility.FilterParam) ([]*models.Complaints, error) //admin olny
 }
 
 type ComplaintMessageRepository interface {

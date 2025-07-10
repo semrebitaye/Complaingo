@@ -63,8 +63,23 @@ func (uc *ComplaintHandler) GetComplaintByRole(w http.ResponseWriter, r *http.Re
 
 	}
 
+	query := r.URL.Query()
+	paginPram := utility.PaginationParam{
+		Page:    query.Get("page"),
+		PerPage: query.Get("per_page"),
+		Sort:    query.Get("sort"),
+		Search:  query.Get("search"),
+		Filter:  query.Get("filter"),
+	}
+
+	filterParam, err := utility.ExtractPagination(paginPram)
+	if err != nil {
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "Failed to prase query params"))
+		return
+	}
+
 	// not found in cache fetch from DB
-	complaint, err := uc.usecase.GetComplaintByRole(r.Context(), user_id)
+	complaint, err := uc.usecase.GetComplaintByRole(r.Context(), user_id, filterParam)
 	if err != nil {
 		middleware.WriteError(w, err)
 		return
@@ -94,7 +109,22 @@ func (uc *ComplaintHandler) UserMarkResolved(w http.ResponseWriter, r *http.Requ
 }
 
 func (uc *ComplaintHandler) GetAllComplaintByRole(w http.ResponseWriter, r *http.Request) {
-	complaints, err := uc.usecase.GetAllComplaintByRole(r.Context())
+	query := r.URL.Query()
+	paginationParam := utility.PaginationParam{
+		Page:    query.Get("page"),
+		PerPage: query.Get("per_page"),
+		Sort:    query.Get("sort"),
+		Search:  query.Get("search"),
+		Filter:  query.Get("filter"),
+	}
+
+	filterParam, err := utility.ExtractPagination(paginationParam)
+	if err != nil {
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "Invalid query params"))
+		return
+	}
+
+	complaints, err := uc.usecase.GetAllComplaintByRole(r.Context(), filterParam)
 	if err != nil {
 		middleware.WriteError(w, err)
 		return

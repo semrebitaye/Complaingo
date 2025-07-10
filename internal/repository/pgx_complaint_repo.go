@@ -1,10 +1,12 @@
 package repository
 
 import (
-	"context"
 	"Complaingo/internal/domain/models"
 	appErrors "Complaingo/internal/errors"
 	"Complaingo/internal/middleware"
+	"Complaingo/internal/utility"
+	"context"
+	"fmt"
 	"log"
 
 	"github.com/jackc/pgx/v5"
@@ -44,9 +46,46 @@ func (r *PgxComplaintRepo) CreateComplaint(ctx context.Context, c *models.Compla
 	return nil
 }
 
-func (r *PgxComplaintRepo) GetComplaintByRole(ctx context.Context, UserID int) ([]*models.Complaints, error) {
-	query := `SELECT * FROM complaints WHERE user_id=$1`
-	rows, err := r.db.Query(ctx, query, UserID)
+func (r *PgxComplaintRepo) GetComplaintByRole(ctx context.Context, UserID int, param utility.FilterParam) ([]*models.Complaints, error) {
+	query := `SELECT * FROM complaints WHERE 1=1`
+
+	args := []interface{}{UserID}
+	query += " AND user_id=$1"
+	argIdx := 2
+
+	// add filters
+	for _, f := range param.Filters {
+		query += fmt.Sprintf(" AND %s %s $%d", f.ColumnName, f.Operator, argIdx)
+		args = append(args, f.Value)
+		argIdx++
+	}
+
+	// add search
+	if param.Search != "" {
+		query += fmt.Sprintf(" AND (user_id ILIKE $%d OR subject ILIKE $%d)", argIdx, argIdx+1)
+		searchVal := "%" + param.Search + "%"
+		args = append(args, searchVal, searchVal)
+		argIdx += 2
+	}
+
+	// add sort
+	sortCol := param.Sort.ColumnName
+	sortOrder := param.Sort.Value
+
+	if sortCol == "" {
+		sortCol = "id"
+	}
+	if sortOrder == "" {
+		sortOrder = "asc"
+	}
+	query += fmt.Sprintf(" ORDER BY %s %s", sortCol, sortOrder)
+
+	//add pagination
+	offset := (param.Page - 1) * param.PerPage
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+	args = append(args, param.PerPage, offset)
+
+	rows, err := r.db.Query(ctx, query, args)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, appErrors.ErrUserNotFound.Wrap(err, "Complaint not found")
@@ -94,13 +133,34 @@ func (r *PgxComplaintRepo) UpdateComplaints(ctx context.Context, ComplaintId int
 	return nil
 }
 
-func (r *PgxComplaintRepo) GetAllComplaintByRole(ctx context.Context) ([]*models.Complaints, error) {
-	if !middleware.IsAdmin(ctx) {
-		return nil, appErrors.ErrInvalidPayload.New("admin only can retrieve all data")
+func (r *PgxComplaintRepo) GetAllComplaintByRole(ctx context.Context, param utility.FilterParam) ([]*models.Complaints, error) {
+	query := `SELECT id, user_id, subject, message, status, created_at FROM complaints WHERE 1=1` //to add AND conditions later.
+	var args []interface{}
+	argIdx := 1
+
+	// Filters
+	for _, f := range param.Filters {
+		query += fmt.Sprintf(" AND %s %s $%d", f.ColumnName, f.Operator, argIdx)
+		args = append(args, f.Value)
+		argIdx++
 	}
 
-	query := `SELECT * FROM complaints`
-	rows, err := r.db.Query(ctx, query)
+	// search in subject or message
+	if param.Search != "" {
+		query += fmt.Sprintf(" AND (subject ILIKE $%d OR message ILIKE $%d)", argIdx, argIdx+1)
+		args = append(args, "%"+param.Search+"%", "%"+param.Search+"%")
+		argIdx += 2
+	}
+
+	// sorting
+	query += fmt.Sprintf(" ORDER BY %s %s", param.Sort.ColumnName, param.Sort.Value)
+
+	// pagination
+	offset := (param.Page - 1) * param.PerPage
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+	args = append(args, param.PerPage, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, appErrors.ErrDbFailure.Wrap(err, "query failed")
 	}
@@ -179,4 +239,3 @@ func (r *PgxComplaintMessageRepo) GetMessageByID(ctx context.Context, messageID 
 }
 
 // notifier interface
-

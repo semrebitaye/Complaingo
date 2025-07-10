@@ -1,8 +1,10 @@
 package repository
 
 import (
-	"context"
 	"Complaingo/internal/domain/models"
+	"Complaingo/internal/utility"
+	"context"
+	"fmt"
 	"time"
 
 	appErrors "Complaingo/internal/errors"
@@ -43,10 +45,45 @@ func (r *DocumentRepository) GetDocumentByID(ctx context.Context, id int) (*mode
 	return doc, nil
 }
 
-func (r *DocumentRepository) GetDocumentByUser(ctx context.Context, user_id int) ([]*models.Document, error) {
-	query := `SELECT id, user_id, file_name, file_path, uploaded_at FROM documents WHERE user_id=$1`
+func (r *DocumentRepository) GetDocumentByUser(ctx context.Context, user_id int, param utility.FilterParam) ([]*models.Document, error) {
+	query := `SELECT id, user_id, file_name, file_path, uploaded_at FROM documents WHERE 1=1`
 
-	rows, err := r.db.Query(ctx, query, user_id)
+	args := []interface{}{user_id}
+	query += " AND user_id=$1"
+	argIdx := 2
+
+	// add filters
+	for _, f := range param.Filters {
+		query += fmt.Sprintf(" AND %s %s $%d", f.ColumnName, f.Operator, argIdx)
+		args = append(args, f.Value)
+		argIdx++
+	}
+
+	// add search across user_id and file_name
+	if param.Search != "" {
+		query += fmt.Sprintf(" AND (user_id ILIKE $%d OR file_name ILIKE $%d)", argIdx, argIdx+1)
+		searchVal := "%" + param.Search + "%"
+		args = append(args, searchVal, searchVal)
+	}
+
+	// add sort
+	sortCol := param.Sort.ColumnName
+	sortOrder := param.Sort.Value
+
+	if sortCol == "" {
+		sortCol = "user_id"
+	}
+	if sortOrder == "" {
+		sortOrder = "asc"
+	}
+	query += fmt.Sprintf(" ORDER BY %s %s", sortCol, sortOrder)
+
+	// add pagination
+	offset := (param.Page - 1) * param.PerPage
+	query += fmt.Sprintf(" AND LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+	args = append(args, param.PerPage, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, appErrors.ErrDbFailure.New("query failed")
 	}
