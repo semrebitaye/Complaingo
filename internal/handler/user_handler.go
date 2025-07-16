@@ -39,7 +39,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	middleware.WriteSuccess(w, u, "User Registered Successfully")
+	middleware.WriteSuccess(w, u, "User Registered Successfully", http.StatusCreated)
 }
 
 func (h *UserHandler) GetAllUser(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +66,7 @@ func (h *UserHandler) GetAllUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	middleware.WriteSuccess(w, users, "All users retrieved Successfully")
+	middleware.WriteSuccess(w, users, "All users retrieved Successfully", http.StatusOK)
 }
 
 func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +85,7 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		// found on catch return it
 		var cathUser models.User
 		if err := json.Unmarshal([]byte(catchUserJson), &cathUser); err == nil {
-			middleware.WriteSuccess(w, cathUser, "user fetched from catch")
+			middleware.WriteSuccess(w, cathUser, "user fetched from catch", http.StatusOK)
 			return
 		}
 	}
@@ -101,7 +101,7 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	userJson, _ := json.Marshal(user)
 	redis.RDB.Set(redis.Ctx, chachKey, userJson, time.Minute*10)
 
-	middleware.WriteSuccess(w, user, "user successfully get by pk id")
+	middleware.WriteSuccess(w, user, "user successfully get by pk id", http.StatusOK)
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -125,7 +125,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	middleware.WriteSuccess(w, u, "User updated successfully")
+	middleware.WriteSuccess(w, u, "User updated successfully", http.StatusCreated)
 }
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -141,16 +141,26 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	middleware.WriteSuccess(w, nil, "User Deleted Successfully")
+	middleware.WriteSuccess(w, nil, "User Deleted Successfully", http.StatusAccepted)
 }
 
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var body validation.LoginInput
+
+	// Decode JSON body
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Println("Failed to decode JSON:", err)
 		middleware.WriteError(w, appErrors.ErrInvalidPayload.New("Invalid login data"))
 		return
 	}
 
+	// Validate payload explicitly
+	if err := body.ValidateLoginInput(); err != nil {
+		middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "Validation failed"))
+		return
+	}
+
+	// perform login logic
 	resp, err := h.usecase.Login(r.Context(), body.Email, body.Password)
 	if err != nil {
 		middleware.WriteError(w, err)
@@ -161,5 +171,5 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	userJson, _ := json.Marshal(resp.User)
 	redis.RDB.Set(redis.Ctx, fmt.Sprintf("User:%d", resp.User.ID), userJson, time.Minute*10)
 
-	middleware.WriteSuccess(w, resp.Token, "User login successfully")
+	middleware.WriteSuccess(w, resp.Token, "User login successfully", http.StatusCreated)
 }

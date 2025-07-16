@@ -2,7 +2,7 @@ package rabbitmq
 
 import (
 	"Complaingo/internal/domain/models"
-	"Complaingo/internal/websocket"
+	websocket "Complaingo/internal/websockets"
 	"encoding/json"
 	"log"
 

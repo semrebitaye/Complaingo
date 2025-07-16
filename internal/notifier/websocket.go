@@ -1,6 +1,6 @@
 package notifier
 
-import "Complaingo/internal/websocket"
+import websocket "Complaingo/internal/websockets"
 
 type RealTimeNotifier struct{}
 

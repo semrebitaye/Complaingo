@@ -58,7 +58,7 @@ func (h *DocumentHandler) Uplod(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	middleware.WriteSuccess(w, doc, "File uploaded successfully")
+	middleware.WriteSuccess(w, doc, "File uploaded successfully", http.StatusCreated)
 }
 
 func (h *DocumentHandler) GetDocumentByID(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +108,7 @@ func (h *DocumentHandler) GetDocumentByUser(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	middleware.WriteSuccess(w, doc, "files retrieved successfully by user id")
+	middleware.WriteSuccess(w, doc, "files retrieved successfully by user id", http.StatusOK)
 }
 
 func (h *DocumentHandler) DeleteDocument(w http.ResponseWriter, r *http.Request) {
@@ -124,5 +124,5 @@ func (h *DocumentHandler) DeleteDocument(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	middleware.WriteSuccess(w, "", "Document deleted successfully")
+	middleware.WriteSuccess(w, "", "Document deleted successfully", http.StatusNoContent)
 }

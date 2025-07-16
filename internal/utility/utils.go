@@ -1,9 +1,9 @@
 package utility
 
 import (
-	"Complaingo/config"
 	"time"
 
+	"Complaingo/config"
 	appErrors "Complaingo/internal/errors"
 
 	"github.com/golang-jwt/jwt"
@@ -22,9 +22,9 @@ func ComparePassword(hashed, plain string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(plain))
 }
 
-var cfg = config.LoadConfig()
-
 func GenerateJWT(userID int, email string, role string) (string, error) {
+	cfg := config.LoadConfig()
+
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"email":   email,
@@ -43,6 +43,8 @@ func GenerateJWT(userID int, email string, role string) (string, error) {
 }
 
 func ValidateToken(tokenStr string) (jwt.MapClaims, error) {
+	cfg := config.LoadConfig()
+
 	//Decode/validateit
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

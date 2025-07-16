@@ -39,7 +39,7 @@ func (uc *ComplaintHandler) CreateComplaint(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	middleware.WriteSuccess(w, c, "Complaint Creted Successfully")
+	middleware.WriteSuccess(w, c, "Complaint Creted Successfully", http.StatusCreated)
 }
 
 func (uc *ComplaintHandler) GetComplaintByRole(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +57,7 @@ func (uc *ComplaintHandler) GetComplaintByRole(w http.ResponseWriter, r *http.Re
 		// found on cache
 		var complaints []models.Complaints
 		if err := json.Unmarshal([]byte(cachedComplaint), &complaints); err == nil {
-			middleware.WriteSuccess(w, complaints, "Complient from cache")
+			middleware.WriteSuccess(w, complaints, "Complient from cache", http.StatusOK)
 			return
 		}
 
@@ -89,7 +89,7 @@ func (uc *ComplaintHandler) GetComplaintByRole(w http.ResponseWriter, r *http.Re
 	complientJson, _ := json.Marshal(complaint)
 	redis.RDB.Set(redis.Ctx, cachKey, complientJson, time.Minute*10)
 
-	middleware.WriteSuccess(w, complaint, "complaint get successfully by pk user_id")
+	middleware.WriteSuccess(w, complaint, "complaint get successfully by pk user_id", http.StatusOK)
 }
 
 func (uc *ComplaintHandler) UserMarkResolved(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +105,7 @@ func (uc *ComplaintHandler) UserMarkResolved(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	middleware.WriteSuccess(w, complaint_id, "Complait updated successfully")
+	middleware.WriteSuccess(w, complaint_id, "Complait updated successfully", http.StatusNoContent)
 }
 
 func (uc *ComplaintHandler) GetAllComplaintByRole(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +130,7 @@ func (uc *ComplaintHandler) GetAllComplaintByRole(w http.ResponseWriter, r *http
 		return
 	}
 
-	middleware.WriteSuccess(w, complaints, "All compliants successfully")
+	middleware.WriteSuccess(w, complaints, "All compliants fetched successfully", http.StatusOK)
 }
 
 func (uc *ComplaintHandler) AdminUpdateComplaints(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +154,7 @@ func (uc *ComplaintHandler) AdminUpdateComplaints(w http.ResponseWriter, r *http
 		middleware.WriteError(w, err)
 	}
 
-	middleware.WriteSuccess(w, body.Status, "Complaint Updated Successfully")
+	middleware.WriteSuccess(w, body.Status, "Complaint Updated Successfully", http.StatusNoContent)
 }
 
 // complaint_messages table
@@ -187,7 +187,7 @@ func (uc *ComplaintHandler) InsertCoplaintMessage(w http.ResponseWriter, r *http
 		return
 	}
 
-	middleware.WriteSuccess(w, message, "Message created Successfully")
+	middleware.WriteSuccess(w, message, "Message created Successfully", http.StatusCreated)
 }
 
 func (uc *ComplaintHandler) GetMessagesByComplaint(w http.ResponseWriter, r *http.Request) {
@@ -204,7 +204,7 @@ func (uc *ComplaintHandler) GetMessagesByComplaint(w http.ResponseWriter, r *htt
 	if err == nil {
 		var message []models.ComplaintMessages
 		if err := json.Unmarshal([]byte(cachedMessage), &message); err == nil {
-			middleware.WriteSuccess(w, message, "Feched from cache")
+			middleware.WriteSuccess(w, message, "Feched from cache", http.StatusOK)
 			return
 		}
 	}
@@ -220,7 +220,7 @@ func (uc *ComplaintHandler) GetMessagesByComplaint(w http.ResponseWriter, r *htt
 	messageJson, _ := json.Marshal(message)
 	redis.RDB.Set(redis.Ctx, cacheKey, messageJson, time.Minute*10)
 
-	middleware.WriteSuccess(w, message, "Message successfully fetched by complaint id")
+	middleware.WriteSuccess(w, message, "Message successfully fetched by complaint id", http.StatusOK)
 }
 
 func (uc *ComplaintHandler) ReplyToMessage(w http.ResponseWriter, r *http.Request) {
@@ -238,7 +238,6 @@ func (uc *ComplaintHandler) ReplyToMessage(w http.ResponseWriter, r *http.Reques
 		middleware.WriteError(w, appErrors.ErrInvalidPayload.Wrap(err, "can't parse multipart form"))
 		return
 	}
-
 	// extract text message
 	message := r.FormValue("message")
 	if message == "" {
@@ -270,5 +269,5 @@ func (uc *ComplaintHandler) ReplyToMessage(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	middleware.WriteSuccess(w, msg, "Reply Message added successfully")
+	middleware.WriteSuccess(w, msg, "Reply Message added successfully", http.StatusCreated)
 }

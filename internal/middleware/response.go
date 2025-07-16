@@ -15,12 +15,12 @@ type SuccessResponse struct {
 	Data    interface{} `json:"data"`
 }
 
-func WriteSuccess(w http.ResponseWriter, data interface{}, message string) {
+func WriteSuccess(w http.ResponseWriter, data interface{}, message string, status int) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 
 	json.NewEncoder(w).Encode(SuccessResponse{
-		Code:    http.StatusOK,
+		Code:    status,
 		Message: message,
 		Data:    data,
 	})

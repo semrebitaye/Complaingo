@@ -2,15 +2,10 @@ package main
 
 import (
 	"Complaingo/config"
-	"Complaingo/internal/handler"
 	"Complaingo/internal/kafka"
-	"Complaingo/internal/middleware"
-	"Complaingo/internal/notifier"
 	"Complaingo/internal/rabbitmq"
 	"Complaingo/internal/redis"
-	"Complaingo/internal/repository"
-	"Complaingo/internal/usecase"
-	"Complaingo/internal/websocket"
+	"Complaingo/internal/router"
 	"context"
 	"fmt"
 	"log"
@@ -18,83 +13,37 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/gorilla/mux"
 )
 
 func main() {
 	cfg := config.LoadConfig()
 
-	// Connect to DB
+	// Connect to PostgreSQL DB
 	db := config.ConnectToDB()
 	defer db.Close(context.Background())
 
+	// Connect to Redis
 	redis.ConnectRedis()
 
+	// Setup RabbitMQ
 	rabbit := rabbitmq.NewProducer("amqp://guest:guest@localhost:5672/", "notifications")
 	consumer := rabbitmq.NewConsumer("amqp://guest:guest@localhost:5672/", "notifications")
 	rabbit.SendMessage("Hello from go rabbit")
 	consumer.StartConsuming()
 
-	repo := repository.NewPgxUserRepo(db)
-	usercase := usecase.NewUserUsecase(repo)
-	userHandler := handler.NewUserHandler(usercase)
-
-	r := mux.NewRouter()
-	fs := http.FileServer(http.Dir("/uploads"))
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
-
-	r.HandleFunc("/register", userHandler.Register).Methods("POST")
-	r.HandleFunc("/login", userHandler.Login).Methods("POST")
-
-	authR := r.PathPrefix("/").Subrouter()
-	authR.Use(middleware.Authentication)
-
-	authR.Handle("/ask-ai", middleware.RBAC("admin", "user")(http.HandlerFunc(handler.AIChatHandler))).Methods("POST")
-	authR.Handle("/users", middleware.RBAC("admin", "user")(http.HandlerFunc(userHandler.GetAllUser))).Methods("GET")
-	authR.Handle("/user/{id}", middleware.RBAC("admin", "user")(http.HandlerFunc(userHandler.GetUserByID))).Methods("GET")
-	authR.Handle("/users/{id}", middleware.RBAC("admin")(http.HandlerFunc(userHandler.UpdateUser))).Methods("PATCH")
-	authR.Handle("/users/{id}", middleware.RBAC("admin")(http.HandlerFunc(userHandler.DeleteUser))).Methods("DELETE")
-
-	complaintRepo := repository.NewPgxComplaintRepo(db)
-	complaintMessageRepo := repository.NewPgxComplaintMessageRepo(db)
-	notifier := &notifier.RealTimeNotifier{}
-	complaintUsecase := usecase.NewComplaintUsecase(complaintRepo, complaintMessageRepo, notifier)
-
-	complaintHandler := handler.NewComplaintHandler(complaintUsecase)
-
-	messageRepo := repository.NewMessageRepository(db)
+	// Setup Kafka
 	kafkaConsumer := kafka.NewKafkaConsumer([]string{"localhost:9092"}, "chat-messages", "chat-group")
 	kafkaCtx, kafkaStop := context.WithCancel(context.Background())
 	kafkaConsumer.StartConsuming(kafkaCtx)
 	kafkaProducer := kafka.NewKafkaProducer([]string{"localhost:9092"}, "chat-messages")
-	websocketHandler := websocket.NewwebsocketHandler(messageRepo, kafkaProducer)
 
-	authR.HandleFunc("/ws", websocketHandler.HandleWebsocket).Methods("GET")
+	// initialize router
+	r := router.NewRouter(cfg, db, kafkaProducer)
 
-	authR.Handle("/complaints", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.CreateComplaint))).Methods("POST")
-	authR.Handle("/complaints/user/{id}", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.GetComplaintByRole))).Methods("GET")
-	authR.Handle("/complaints/{id}/resolve", middleware.RBAC("user")(http.HandlerFunc(complaintHandler.UserMarkResolved))).Methods("PATCH")
-	authR.Handle("/complaints", middleware.RBAC("admin")(http.HandlerFunc(complaintHandler.GetAllComplaintByRole))).Methods("GET")
-	authR.Handle("/complaints/{id}/status", middleware.RBAC("admin")(http.HandlerFunc(complaintHandler.AdminUpdateComplaints))).Methods("PATCH")
-
-	authR.Handle("/complaints/{id}/messages", middleware.RBAC("admin", "user")(http.HandlerFunc(complaintHandler.InsertCoplaintMessage))).Methods("POST")
-	authR.Handle("/complaints/{id}/messages", middleware.RBAC("admin", "user")(http.HandlerFunc(complaintHandler.GetMessagesByComplaint))).Methods("GET")
-	authR.Handle("/complaints/{id}/reply", middleware.RBAC("admin", "user")(http.HandlerFunc(complaintHandler.ReplyToMessage))).Methods("POST")
-
-	docRepo := repository.NewDocumentRepository(db)
-	docUC := usecase.NewDocumentUsecase(docRepo)
-	docHandle := handler.NewDocumentHandler(docUC)
-
-	authR.Handle("/documents", middleware.RBAC("admin", "user")(http.HandlerFunc(docHandle.Uplod))).Methods("POST")
-	authR.Handle("/documents/{id}", middleware.RBAC("admin", "user")(http.HandlerFunc(docHandle.GetDocumentByID))).Methods("GET")
-	authR.Handle("/documents/user/{id}", middleware.RBAC("admin", "user")(http.HandlerFunc(docHandle.GetDocumentByUser))).Methods("GET")
-	authR.Handle("/documents/{id}", middleware.RBAC("admin", "user")(http.HandlerFunc(docHandle.DeleteDocument))).Methods("DELETE")
-
-	// create server
+	// start HTTP server
 	srv := http.Server{
 		Addr:    ":" + cfg.ServerPort,
-		Handler: middleware.RecoverMiddleware(r),
+		Handler: r,
 	}
 
 	go func() {
@@ -104,19 +53,20 @@ func main() {
 		}
 	}()
 
-	shoutdown, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
-	defer stop()
-	<-shoutdown.Done()
-	fmt.Println("Souting down server...")
+	// Graceful shutdown
 
-	kafkaStop() //gracefully stop kafka consumer
+	shutdownCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	<-shutdownCtx.Done()
+	fmt.Println("Shutting down server...")
+
+	kafkaStop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		fmt.Printf("Graceful shotdown failed: %v\n", err)
+		fmt.Printf("Graceful shutdown failed: %v\n", err)
 	}
-
-	log.Println("Server shoutdown complete")
+	log.Println("Server shutdown complete")
 }

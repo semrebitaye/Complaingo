@@ -16,9 +16,24 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v\n", err)
+	envFile := ".env"
+	if os.Getenv("ENV") == "test" {
+		envFile = "../.env.test"
+	}
+
+	// Check if custom config path was provided
+	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
+		envFile = configPath
+	}
+
+	// Verify file exists
+	if _, err := os.Stat(envFile); os.IsNotExist(err) {
+		log.Printf("Warning: Config file %s not found, using environment variables", envFile)
+	} else {
+		err := godotenv.Load(envFile)
+		if err != nil {
+			log.Printf("Warning: Error loading %s: %v", envFile, err)
+		}
 	}
 
 	dbUrl := os.Getenv("DATABASE_URL")
@@ -33,7 +48,7 @@ func LoadConfig() *Config {
 
 	serverPort := os.Getenv("PORT")
 	if serverPort == "" {
-		panic(appErrors.ErrInvalidPayload.Wrap(err, "port must be a number"))
+		panic(appErrors.ErrInvalidPayload.New("port must be a number"))
 	}
 
 	return &Config{
@@ -41,5 +56,4 @@ func LoadConfig() *Config {
 		JWTSecret:  jwtSecret,
 		ServerPort: serverPort,
 	}
-
 }

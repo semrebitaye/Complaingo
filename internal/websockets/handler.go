@@ -16,8 +16,8 @@ import (
 )
 
 type WebsocketHandler struct {
-	MessageRepo *repository.MessageRepository
-	kafProd     *kafka.KafkaProducer
+	MessageRepo repository.MessageSaver
+	kafProd     kafka.Producer
 }
 
 // client struct -- represent one connected user
@@ -162,7 +162,7 @@ func SendToUser(userID int, message any) {
 	}
 }
 
-func NewwebsocketHandler(messageRepo *repository.MessageRepository, kafkaProd *kafka.KafkaProducer) *WebsocketHandler {
+func NewwebsocketHandler(messageRepo repository.MessageSaver, kafkaProd kafka.Producer) *WebsocketHandler {
 	return &WebsocketHandler{
 		MessageRepo: messageRepo,
 		kafProd:     kafkaProd,
