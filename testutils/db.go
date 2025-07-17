@@ -132,3 +132,14 @@ func CleanTestDB() {
 		log.Printf("failed to clean test database: %v", err)
 	}
 }
+
+func InsertComplaint(userID int, subject, message, status string) int {
+	var id int
+	err := GetTestDB().QueryRow(context.Background(),
+		`INSERT INTO complaints (user_id, subject, message, status)
+	VALUES ($1, $2, $3, $4) RETURNING id`, userID, subject, message, status).Scan(&id)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}

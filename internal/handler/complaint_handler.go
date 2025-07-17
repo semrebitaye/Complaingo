@@ -105,7 +105,7 @@ func (uc *ComplaintHandler) UserMarkResolved(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	middleware.WriteSuccess(w, complaint_id, "Complait updated successfully", http.StatusNoContent)
+	middleware.WriteSuccess(w, complaint_id, "Complait updated successfully", http.StatusOK)
 }
 
 func (uc *ComplaintHandler) GetAllComplaintByRole(w http.ResponseWriter, r *http.Request) {
