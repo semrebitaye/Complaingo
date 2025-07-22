@@ -23,7 +23,6 @@ func TestInvalidLoginCase(t *testing.T) {
 	VALUES ('test', 'user', 'test@gmail.com', '$2a$10$zWpP41dt6cSZwChZ6GYA4u11wIfwk8nlDQD.3uFPReU9G13H3ItDW', 1)
 	`)
 	assert.NoError(t, err)
-
 	tests := []struct {
 		name          string
 		payload       string
@@ -67,7 +66,6 @@ func TestInvalidLoginCase(t *testing.T) {
 			wantErrorType: "Invalid login data",
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// prepare request with correct content type

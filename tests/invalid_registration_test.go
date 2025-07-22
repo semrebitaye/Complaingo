@@ -69,7 +69,7 @@ func TestUserRegistrationError(t *testing.T) {
 				"password":   "password123",
 				"role":       "admin",
 			},
-			wantStatus: http.StatusCreated,
+			wantStatus: http.StatusBadRequest,
 		},
 	}
 	for _, tc := range tests {
