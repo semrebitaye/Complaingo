@@ -65,7 +65,7 @@ func ValidateToken(tokenStr string) (jwt.MapClaims, error) {
 
 	// Explicit expiration check
 	exp, ok := claims["exp"].(float64)
-	if !ok || int64(exp) < time.Now().Unix() {
+	if !ok || time.Unix(int64(exp), 0).Before(time.Now()) {
 		return nil, appErrors.ErrUnauthorized.New("token expired")
 	}
 
