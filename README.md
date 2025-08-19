@@ -48,6 +48,7 @@ POST /complaints – Submit a complaint
 POST /documents – Upload a document
 
 ### Project Structure
+'''
 complaingo/
 ├── api_gateway/        # API Gateway service (reverse proxy, rate limit)
 ├── config/             # Configuration files
@@ -74,3 +75,4 @@ complaingo/
 ├── go.mod              # Go module definition
 ├── go.sum              # Go module checksum file
 └── main.go             # Main application entry point
+'''
