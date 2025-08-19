@@ -25,7 +25,7 @@ Complaingo is an Online Complaint Management System built with Go (Golang) that 
 
 ### Tech Stack
 
-#### Layer...........................Technology
+#### Layer___________________________Technology
 
     Back                              Go (Golang)
     Framework                         Gorilla Mux (Routing)
