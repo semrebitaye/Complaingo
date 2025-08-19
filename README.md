@@ -25,16 +25,16 @@ Complaingo is an Online Complaint Management System built with Go (Golang) that 
 
 ### Tech Stack
 
-#### Layer                                                   Technology
+#### Layer                        ### Technology
 
-    Backend                                                 Go (Golang)
-    Framework                                               Gorilla Mux (Routing)
-    DB                                                      PostgreSQL
-    Real-Time                                               Gorilla WebSocket   
-    Caching                                                 Redis
-    Messaging                                               Kafka, RabbitMQ
-    AI Integration                                          OpenAI API
-    Auth                                                    JWT
+    Back                              Go (Golang)
+    Framework                         Gorilla Mux (Routing)
+    D                                 PostgreSQL
+    Real-Time                         Gorilla WebSocket   
+    Caching                           Redis
+    Messaging                         Kafka, RabbitMQ
+    AI Integration                    OpenAI API
+    Auth                              JWT
 
 ### Test Endpoints via Postman
 POST /register – Register user
@@ -48,6 +48,7 @@ POST /complaints – Submit a complaint
 POST /documents – Upload a document
 
 ### Project Structure
+'''
 complaingo/
 ├── api_gateway/        # API Gateway service (reverse proxy, rate limit)
 ├── config/             # Configuration files
@@ -74,3 +75,4 @@ complaingo/
 ├── go.mod              # Go module definition
 ├── go.sum              # Go module checksum file
 └── main.go             # Main application entry point
+'''
